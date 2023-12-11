@@ -4,6 +4,7 @@ import (
 	"github.com/LamkasDev/seal/cmd/common/constants"
 	"github.com/LamkasDev/seal/cmd/engine/engine"
 	sealGLFW "github.com/LamkasDev/seal/cmd/engine/glfw"
+	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	sealVulkan "github.com/LamkasDev/seal/cmd/engine/vulkan"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
@@ -22,16 +23,14 @@ func main() {
 	logger.DefaultLogger.Info("started glfw")
 	defer sealGLFW.EndGLFW()
 
-	// Setup vulkan loader
-	vulkanLoader, err := sealVulkan.NewVulkanLoader()
-	if err != nil {
+	if err := sealVulkan.StartVulkan(); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	logger.DefaultLogger.Info("create new vulkan loader")
-	defer sealVulkan.FreeVulkanLoader(vulkanLoader)
+	logger.DefaultLogger.Info("started vulkan")
+	defer sealVulkan.EndVulkan()
 
 	// Setup required instances
-	vulkanInstance, err := sealVulkan.NewVulkanInstance(vulkanLoader)
+	vulkanInstance, err := sealVulkan.NewVulkanInstance()
 	if err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
@@ -45,7 +44,7 @@ func main() {
 	logger.DefaultLogger.Info("created new window")
 	defer window.FreeWindow(&sealWindow)
 
-	sealEngine, err := engine.NewEngine(&sealWindow)
+	sealEngine, err := engine.NewEngine(renderer.NewRendererOptions(&vulkanInstance, &sealWindow))
 	if err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}

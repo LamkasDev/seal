@@ -7,18 +7,15 @@ import (
 )
 
 type Engine struct {
-	Window   *window.Window
 	Renderer renderer.Renderer
 	Input    input.Input
 }
 
-func NewEngine(window *window.Window) (Engine, error) {
+func NewEngine(rendererOptions renderer.RendererOptions) (Engine, error) {
 	var err error
-	engine := Engine{
-		Window: window,
-	}
+	engine := Engine{}
 
-	engine.Renderer, err = renderer.NewRenderer()
+	engine.Renderer, err = renderer.NewRenderer(rendererOptions)
 	if err != nil {
 		return engine, err
 	}
@@ -32,11 +29,11 @@ func NewEngine(window *window.Window) (Engine, error) {
 }
 
 func RunEngine(engine *Engine) error {
-	for !engine.Window.Handle.ShouldClose() {
+	for !engine.Renderer.Options.Window.Handle.ShouldClose() {
 		if err := renderer.RunRenderer(&engine.Renderer); err != nil {
 			return err
 		}
-		if err := window.RunWindow(engine.Window); err != nil {
+		if err := window.RunWindow(engine.Renderer.Options.Window); err != nil {
 			return err
 		}
 		if err := input.RunInput(&engine.Input); err != nil {

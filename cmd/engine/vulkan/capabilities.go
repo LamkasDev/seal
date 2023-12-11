@@ -1,21 +1,25 @@
 package vulkan
 
 import (
-	"github.com/vkngwrapper/core/v2"
-	"golang.org/x/exp/maps"
+	"github.com/samber/lo"
+	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanInstanceCapabilities struct {
-	AvailableLayers []string
+	Layers     []vulkan.LayerProperties
+	LayerNames []string
 }
 
-func NewVulkanInstanceCapabilities(loader *core.VulkanLoader) (VulkanInstanceCapabilities, error) {
+func NewVulkanInstanceCapabilities() (VulkanInstanceCapabilities, error) {
 	capabilities := VulkanInstanceCapabilities{}
-	layers, _, err := loader.AvailableLayers()
-	if err != nil {
-		return capabilities, err
-	}
-	capabilities.AvailableLayers = maps.Keys(layers)
+
+	var layerCount uint32
+	vulkan.EnumerateInstanceLayerProperties(&layerCount, nil)
+	capabilities.Layers = make([]vulkan.LayerProperties, layerCount)
+	vulkan.EnumerateInstanceLayerProperties(&layerCount, capabilities.Layers)
+	capabilities.LayerNames = lo.Map(capabilities.Layers, func(layer vulkan.LayerProperties, i int) string {
+		return string(layer.LayerName[:])
+	})
 
 	return capabilities, nil
 }

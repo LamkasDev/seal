@@ -1,46 +1,48 @@
 package vulkan
 
 import (
-	"github.com/LamkasDev/seal/cmd/common/arch"
 	"github.com/LamkasDev/seal/cmd/logger"
-	"github.com/vkngwrapper/core/v2"
-	vulkan "github.com/vkngwrapper/core/v2/core1_0"
+	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanInstance struct {
+	Handle       vulkan.Instance
 	Capabilities VulkanInstanceCapabilities
 	Options      VulkanInstanceOptions
-	Handle       vulkan.Instance
-	Debugger     VulkanDebugger
+	Devices      VulkanInstanceDevices
 }
 
-func NewVulkanInstance(loader *core.VulkanLoader) (VulkanInstance, error) {
+func NewVulkanInstance() (VulkanInstance, error) {
 	var err error
 	instance := VulkanInstance{}
 
-	if instance.Capabilities, err = NewVulkanInstanceCapabilities(loader); err != nil {
+	if instance.Capabilities, err = NewVulkanInstanceCapabilities(); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan instance capabilities")
 
-	if instance.Options, err = NewVulkanInstanceOptions(&instance.Capabilities); err != nil {
+	if instance.Options, err = NewVulkanInstanceOptions(&instance); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan instance options")
 
-	instance.Handle, _, _ = loader.CreateInstance(nil, instance.Options.CreateInfo)
+	var vulkanInstance vulkan.Instance
+	vulkan.CreateInstance(&instance.Options.CreateInfo, nil, &vulkanInstance)
+	instance.Handle = vulkanInstance
+	logger.DefaultLogger.Info("created new vulkan instance")
 
-	if arch.SealDebug {
-		if instance.Debugger, err = NewVulkanDebugger(); err != nil {
-			logger.DefaultLogger.Warn(err.Error())
-		}
+	if instance.Devices, err = NewVulkanInstanceDevices(&instance); err != nil {
+		logger.DefaultLogger.Panic(err.Error())
 	}
+	logger.DefaultLogger.Debug("created new vulkan instance devices")
 
 	return instance, nil
 }
 
 func FreeVulkanInstance(instance *VulkanInstance) error {
-	instance.Handle.Destroy(nil)
-
+	if err := FreeVulkanInstanceDevices(&instance.Devices); err != nil {
+		return err
+	}
+	vulkan.DestroyInstance(instance.Handle, nil)
 	return nil
 }

@@ -2,14 +2,14 @@ package vulkan
 
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/vkngwrapper/core/v2"
+	"github.com/vulkan-go/vulkan"
 )
 
-func NewVulkanLoader() (*core.VulkanLoader, error) {
-	return core.CreateLoaderFromProcAddr(glfw.GetVulkanGetInstanceProcAddress())
+func StartVulkan() error {
+	vulkan.SetGetInstanceProcAddr(glfw.GetVulkanGetInstanceProcAddress())
+	return vulkan.Init()
 }
 
-func FreeVulkanLoader(loader *core.VulkanLoader) error {
-	loader.Driver().Destroy()
+func EndVulkan() error {
 	return nil
 }
