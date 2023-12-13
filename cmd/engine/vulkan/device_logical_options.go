@@ -2,33 +2,43 @@ package vulkan
 
 import (
 	"github.com/vulkan-go/vulkan"
+	"golang.org/x/exp/maps"
 )
 
 type VulkanLogicalDeviceOptions struct {
-	QueueCreateInfo []vulkan.DeviceQueueCreateInfo
 	Features        []vulkan.PhysicalDeviceFeatures
+	QueueCreateInfo map[uint32]vulkan.DeviceQueueCreateInfo
 	CreateInfo      vulkan.DeviceCreateInfo
 }
 
 func NewVulkanLogicalDeviceOptions(device *VulkanPhysicalDevice) (VulkanLogicalDeviceOptions, error) {
-	options := VulkanLogicalDeviceOptions{}
-	options.QueueCreateInfo = []vulkan.DeviceQueueCreateInfo{
-		{
-			SType:            vulkan.StructureTypeDeviceQueueCreateInfo,
-			QueueFamilyIndex: uint32(device.QueueFamilyGraphicsIndex),
-			QueueCount:       1,
-			PQueuePriorities: []float32{1},
+	options := VulkanLogicalDeviceOptions{
+		Features: []vulkan.PhysicalDeviceFeatures{
+			{},
 		},
+		QueueCreateInfo: map[uint32]vulkan.DeviceQueueCreateInfo{},
 	}
-	options.Features = []vulkan.PhysicalDeviceFeatures{
-		{},
-	}
+	AddVulkanLogicalDeviceOptionsQueue(&options, uint32(device.Capabilities.Queue.GraphicsIndex))
+	AddVulkanLogicalDeviceOptionsQueue(&options, uint32(device.Capabilities.Queue.PresentationIndex))
 	options.CreateInfo = vulkan.DeviceCreateInfo{
-		SType:             vulkan.StructureTypeDeviceCreateInfo,
-		PQueueCreateInfos: options.QueueCreateInfo,
-		PEnabledFeatures:  options.Features,
+		SType:            vulkan.StructureTypeDeviceCreateInfo,
+		PEnabledFeatures: options.Features,
+		PpEnabledExtensionNames: []string{
+			vulkan.KhrSwapchainExtensionName,
+		},
+		PQueueCreateInfos: maps.Values(options.QueueCreateInfo),
 	}
+	options.CreateInfo.EnabledExtensionCount = uint32(len(options.CreateInfo.PpEnabledExtensionNames))
 	options.CreateInfo.QueueCreateInfoCount = uint32(len(options.CreateInfo.PQueueCreateInfos))
 
 	return options, nil
+}
+
+func AddVulkanLogicalDeviceOptionsQueue(options *VulkanLogicalDeviceOptions, index uint32) {
+	options.QueueCreateInfo[index] = vulkan.DeviceQueueCreateInfo{
+		SType:            vulkan.StructureTypeDeviceQueueCreateInfo,
+		QueueFamilyIndex: index,
+		QueueCount:       1,
+		PQueuePriorities: []float32{1},
+	}
 }

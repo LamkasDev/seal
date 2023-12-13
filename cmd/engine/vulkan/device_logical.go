@@ -9,13 +9,14 @@ type VulkanLogicalDevice struct {
 	Handle   vulkan.Device
 	Physical *VulkanPhysicalDevice
 	Options  VulkanLogicalDeviceOptions
-	Queue    vulkan.Queue
+	Queues   map[uint32]vulkan.Queue
 }
 
 func NewVulkanLogicalDevice(physicalDevice *VulkanPhysicalDevice) (VulkanLogicalDevice, error) {
 	var err error
 	device := VulkanLogicalDevice{
 		Physical: physicalDevice,
+		Queues:   map[uint32]vulkan.Queue{},
 	}
 
 	if device.Options, err = NewVulkanLogicalDeviceOptions(physicalDevice); err != nil {
@@ -28,15 +29,13 @@ func NewVulkanLogicalDevice(physicalDevice *VulkanPhysicalDevice) (VulkanLogical
 	device.Handle = vulkanDevice
 	logger.DefaultLogger.Info("created new vulkan logical device")
 
-	var vulkanQueue vulkan.Queue
-	vulkan.GetDeviceQueue(device.Handle, uint32(device.Physical.QueueFamilyGraphicsIndex), 0, &vulkanQueue)
-	device.Queue = vulkanQueue
+	for k := range device.Options.QueueCreateInfo {
+		var vulkanQueue vulkan.Queue
+		vulkan.GetDeviceQueue(device.Handle, k, 0, &vulkanQueue)
+		device.Queues[k] = vulkanQueue
+	}
 
 	return device, nil
-}
-
-func ProbeVulkanLogicalDevice(device *VulkanLogicalDevice, surface *vulkan.Surface) {
-	ProbeVulkanPhysicalDevice(device.Physical, surface)
 }
 
 func FreeVulkanLogicalDevice(device *VulkanLogicalDevice) error {

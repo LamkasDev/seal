@@ -17,12 +17,12 @@ func NewRenderer(options RendererOptions) (Renderer, error) {
 	}
 
 	var surfaceRaw uintptr
-	if surfaceRaw, err = options.Window.Handle.CreateWindowSurface(options.VulkanInstance.Handle, nil); err != nil {
+	if surfaceRaw, err = renderer.Options.Window.Handle.CreateWindowSurface(renderer.Options.VulkanInstance.Handle, nil); err != nil {
 		return renderer, err
 	}
 	renderer.Surface = vulkan.Surface(vulkan.SurfaceFromPointer(surfaceRaw))
 
-	sealVulkan.ProbeVulkanLogicalDevice(&renderer.Options.VulkanInstance.Devices.LogicalDevice, &renderer.Surface)
+	sealVulkan.InitializeVulkanInstanceDevices(renderer.Options.VulkanInstance, options.Window.Handle, &renderer.Surface)
 
 	return renderer, nil
 }

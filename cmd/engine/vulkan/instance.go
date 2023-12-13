@@ -2,6 +2,7 @@ package vulkan
 
 import (
 	"github.com/LamkasDev/seal/cmd/logger"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -31,12 +32,17 @@ func NewVulkanInstance() (VulkanInstance, error) {
 	instance.Handle = vulkanInstance
 	logger.DefaultLogger.Info("created new vulkan instance")
 
-	if instance.Devices, err = NewVulkanInstanceDevices(&instance); err != nil {
+	return instance, nil
+}
+
+func InitializeVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, surface *vulkan.Surface) error {
+	var err error
+	if instance.Devices, err = NewVulkanInstanceDevices(instance, window, surface); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan instance devices")
 
-	return instance, nil
+	return nil
 }
 
 func FreeVulkanInstance(instance *VulkanInstance) error {

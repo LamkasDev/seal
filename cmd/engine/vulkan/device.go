@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/LamkasDev/seal/cmd/logger"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -13,7 +14,7 @@ type VulkanInstanceDevices struct {
 	LogicalDevice   VulkanLogicalDevice
 }
 
-func NewVulkanInstanceDevices(instance *VulkanInstance) (VulkanInstanceDevices, error) {
+func NewVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, surface *vulkan.Surface) (VulkanInstanceDevices, error) {
 	var err error
 	devices := VulkanInstanceDevices{}
 
@@ -25,7 +26,7 @@ func NewVulkanInstanceDevices(instance *VulkanInstance) (VulkanInstanceDevices, 
 	devices.PhysicalDevices = []VulkanPhysicalDevice{}
 	for i := 0; i < len(rawDevices); i++ {
 		var device VulkanPhysicalDevice
-		if device, err = NewVulkanPhysicalDevice(rawDevices[i]); err != nil {
+		if device, err = NewVulkanPhysicalDevice(rawDevices[i], window, surface); err != nil {
 			logger.DefaultLogger.Warnf("failed to create a new vulkan device")
 		}
 		if IsVulkanPhysicalDeviceSupported(&device) {
