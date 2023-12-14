@@ -22,7 +22,7 @@ func NewVulkanInstanceOptions(instance *VulkanInstance) (VulkanInstanceOptions, 
 		SType:            vulkan.StructureTypeApplicationInfo,
 		PApplicationName: "Seal Game",
 		PEngineName:      "Seal Engine",
-		ApiVersion:       vulkan.ApiVersion10,
+		ApiVersion:       vulkan.ApiVersion11,
 	}
 	options.CreateInfo = vulkan.InstanceCreateInfo{
 		SType:                   vulkan.StructureTypeInstanceCreateInfo,

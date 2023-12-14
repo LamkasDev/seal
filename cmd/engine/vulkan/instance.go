@@ -28,9 +28,11 @@ func NewVulkanInstance() (VulkanInstance, error) {
 	logger.DefaultLogger.Debug("created new vulkan instance options")
 
 	var vulkanInstance vulkan.Instance
-	vulkan.CreateInstance(&instance.Options.CreateInfo, nil, &vulkanInstance)
+	if res := vulkan.CreateInstance(&instance.Options.CreateInfo, nil, &vulkanInstance); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 	instance.Handle = vulkanInstance
-	logger.DefaultLogger.Info("created new vulkan instance")
+	logger.DefaultLogger.Debug("created new vulkan instance")
 
 	return instance, nil
 }

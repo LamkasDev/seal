@@ -19,9 +19,13 @@ func NewVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, sur
 	devices := VulkanInstanceDevices{}
 
 	var rawDeviceCount uint32
-	vulkan.EnumeratePhysicalDevices(instance.Handle, &rawDeviceCount, nil)
+	if res := vulkan.EnumeratePhysicalDevices(instance.Handle, &rawDeviceCount, nil); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 	rawDevices := make([]vulkan.PhysicalDevice, rawDeviceCount)
-	vulkan.EnumeratePhysicalDevices(instance.Handle, &rawDeviceCount, rawDevices)
+	if res := vulkan.EnumeratePhysicalDevices(instance.Handle, &rawDeviceCount, rawDevices); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 
 	devices.PhysicalDevices = []VulkanPhysicalDevice{}
 	for i := 0; i < len(rawDevices); i++ {
@@ -36,7 +40,7 @@ func NewVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, sur
 	slices.SortFunc(devices.PhysicalDevices, func(a, b VulkanPhysicalDevice) int {
 		return CompareVulkanPhysicalDevice(&b) - CompareVulkanPhysicalDevice(&a)
 	})
-	logger.DefaultLogger.Infof("found %d/%d suitable physical devices", len(devices.PhysicalDevices), len(rawDevices))
+	logger.DefaultLogger.Debugf("found %d/%d suitable physical devices", len(devices.PhysicalDevices), len(rawDevices))
 	if len(devices.PhysicalDevices) == 0 {
 		return devices, errors.New("no suitable physical device found")
 	}

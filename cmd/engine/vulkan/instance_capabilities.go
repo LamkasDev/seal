@@ -2,6 +2,7 @@ package vulkan
 
 import (
 	"github.com/LamkasDev/seal/cmd/common/ctool"
+	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -14,10 +15,14 @@ func NewVulkanInstanceCapabilities() (VulkanInstanceCapabilities, error) {
 	capabilities := VulkanInstanceCapabilities{}
 
 	var layerCount uint32
-	vulkan.EnumerateInstanceLayerProperties(&layerCount, nil)
+	if res := vulkan.EnumerateInstanceLayerProperties(&layerCount, nil); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 	capabilities.Layers = make([]vulkan.LayerProperties, layerCount)
 	capabilities.LayerNames = make([]string, layerCount)
-	vulkan.EnumerateInstanceLayerProperties(&layerCount, capabilities.Layers)
+	if res := vulkan.EnumerateInstanceLayerProperties(&layerCount, capabilities.Layers); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 	for i := 0; i < len(capabilities.Layers); i++ {
 		capabilities.Layers[i].Deref()
 		capabilities.LayerNames[i] = ctool.ByteArray256ToString(capabilities.Layers[i].LayerName)

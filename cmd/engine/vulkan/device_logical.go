@@ -25,15 +25,18 @@ func NewVulkanLogicalDevice(physicalDevice *VulkanPhysicalDevice) (VulkanLogical
 	logger.DefaultLogger.Debug("created new vulkan logical device options")
 
 	var vulkanDevice vulkan.Device
-	vulkan.CreateDevice(physicalDevice.Handle, &device.Options.CreateInfo, nil, &vulkanDevice)
+	if res := vulkan.CreateDevice(physicalDevice.Handle, &device.Options.CreateInfo, nil, &vulkanDevice); res != vulkan.Success {
+		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	}
 	device.Handle = vulkanDevice
-	logger.DefaultLogger.Info("created new vulkan logical device")
+	logger.DefaultLogger.Debug("created new vulkan logical device")
 
 	for k := range device.Options.QueueCreateInfo {
 		var vulkanQueue vulkan.Queue
 		vulkan.GetDeviceQueue(device.Handle, k, 0, &vulkanQueue)
 		device.Queues[k] = vulkanQueue
 	}
+	logger.DefaultLogger.Debug("retrieved vulkan logical device queues")
 
 	return device, nil
 }

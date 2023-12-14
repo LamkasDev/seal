@@ -1,6 +1,8 @@
 package vulkan
 
 import (
+	"fmt"
+
 	"github.com/vulkan-go/vulkan"
 	"golang.org/x/exp/maps"
 )
@@ -24,7 +26,7 @@ func NewVulkanLogicalDeviceOptions(device *VulkanPhysicalDevice) (VulkanLogicalD
 		SType:            vulkan.StructureTypeDeviceCreateInfo,
 		PEnabledFeatures: options.Features,
 		PpEnabledExtensionNames: []string{
-			vulkan.KhrSwapchainExtensionName,
+			fmt.Sprintf("%s\x00", vulkan.KhrSwapchainExtensionName),
 		},
 		PQueueCreateInfos: maps.Values(options.QueueCreateInfo),
 	}

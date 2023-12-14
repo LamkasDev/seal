@@ -42,7 +42,7 @@ func IsVulkanPhysicalDeviceSupported(device *VulkanPhysicalDevice) bool {
 	return (device.Features.GeometryShader == 1) &&
 		device.Capabilities.Queue.GraphicsIndex != -1 &&
 		device.Capabilities.Queue.PresentationIndex != -1 &&
-		device.Capabilities.Surface.FormatIndex != -1 &&
+		device.Capabilities.Surface.ImageFormatIndex != -1 &&
 		len(device.Capabilities.Surface.PresentModes) > 0 &&
 		slices.Contains(device.Capabilities.ExtensionNames, vulkan.KhrSwapchainExtensionName)
 }
