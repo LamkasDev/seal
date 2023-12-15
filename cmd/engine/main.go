@@ -1,13 +1,10 @@
 package main
 
 import (
-	"github.com/LamkasDev/seal/cmd/common/constants"
 	"github.com/LamkasDev/seal/cmd/engine/engine"
 	sealGLFW "github.com/LamkasDev/seal/cmd/engine/glfw"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
-	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	sealVulkan "github.com/LamkasDev/seal/cmd/engine/vulkan"
-	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
 )
 
@@ -30,23 +27,9 @@ func main() {
 	}
 	defer sealVulkan.EndVulkan()
 
-	// Setup required instances
+	// Setup engine
 	progress.AdvanceLoading()
-	vulkanInstance, err := sealVulkan.NewVulkanInstance()
-	if err != nil {
-		logger.DefaultLogger.Panic(err.Error())
-	}
-	defer sealVulkan.FreeVulkanInstance(&vulkanInstance)
-
-	progress.AdvanceLoading()
-	sealWindow, err := window.NewWindow(window.NewWindowOptions("Test", constants.DefaultResolution))
-	if err != nil {
-		logger.DefaultLogger.Panic(err.Error())
-	}
-	defer window.FreeWindow(&sealWindow)
-
-	progress.AdvanceLoading()
-	sealEngine, err := engine.NewEngine(renderer.NewRendererOptions(&vulkanInstance, &sealWindow))
+	sealEngine, err := engine.NewEngine()
 	if err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}

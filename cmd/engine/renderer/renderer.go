@@ -1,33 +1,59 @@
 package renderer
 
 import (
+	"github.com/LamkasDev/seal/cmd/common/constants"
+	"github.com/LamkasDev/seal/cmd/engine/progress"
 	sealVulkan "github.com/LamkasDev/seal/cmd/engine/vulkan"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/swapchain"
+	"github.com/LamkasDev/seal/cmd/engine/window"
+	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
 type Renderer struct {
-	Options   RendererOptions
-	Surface   vulkan.Surface
-	Swapchain sealVulkan.VulkanSwapchain
+	VulkanInstance  sealVulkan.VulkanInstance
+	Window          window.Window
+	Surface         vulkan.Surface
+	Swapchain       swapchain.VulkanSwapchain
+	ShaderContainer shader.VulkanShaderContainer
 }
 
-func NewRenderer(options RendererOptions) (Renderer, error) {
+func NewRenderer() (Renderer, error) {
 	var err error
-	renderer := Renderer{
-		Options: options,
+	renderer := Renderer{}
+
+	progress.AdvanceLoading()
+	renderer.VulkanInstance, err = sealVulkan.NewVulkanInstance()
+	if err != nil {
+		logger.DefaultLogger.Panic(err.Error())
 	}
 
+	progress.AdvanceLoading()
+	renderer.Window, err = window.NewWindow(window.NewWindowOptions("Test", constants.DefaultResolution))
+	if err != nil {
+		logger.DefaultLogger.Panic(err.Error())
+	}
+
+	progress.AdvanceLoading()
 	var surfaceRaw uintptr
-	if surfaceRaw, err = renderer.Options.Window.Handle.CreateWindowSurface(renderer.Options.VulkanInstance.Handle, nil); err != nil {
+	if surfaceRaw, err = renderer.Window.Handle.CreateWindowSurface(renderer.VulkanInstance.Handle, nil); err != nil {
 		return renderer, err
 	}
 	renderer.Surface = vulkan.Surface(vulkan.SurfaceFromPointer(surfaceRaw))
 
-	if err := sealVulkan.InitializeVulkanInstanceDevices(renderer.Options.VulkanInstance, options.Window.Handle, &renderer.Surface); err != nil {
+	progress.AdvanceLoading()
+	if err := sealVulkan.InitializeVulkanInstanceDevices(&renderer.VulkanInstance, renderer.Window.Handle, &renderer.Surface); err != nil {
 		return renderer, err
 	}
 
-	if renderer.Swapchain, err = sealVulkan.NewVulkanSwapchain(&renderer.Options.VulkanInstance.Devices.LogicalDevice, &renderer.Surface); err != nil {
+	progress.AdvanceLoading()
+	if renderer.Swapchain, err = swapchain.NewVulkanSwapchain(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Surface); err != nil {
+		return renderer, err
+	}
+
+	progress.AdvanceLoading()
+	if renderer.ShaderContainer, err = shader.NewVulkanShaderContainer(); err != nil {
 		return renderer, err
 	}
 
@@ -39,10 +65,12 @@ func RunRenderer(renderer *Renderer) error {
 }
 
 func FreeRenderer(renderer *Renderer) error {
-	vulkan.DestroySurface(renderer.Options.VulkanInstance.Handle, renderer.Surface, nil)
-	if err := sealVulkan.FreeVulkanSwapchain(&renderer.Swapchain); err != nil {
+	if err := swapchain.FreeVulkanSwapchain(&renderer.Swapchain); err != nil {
 		return err
 	}
+	vulkan.DestroySurface(renderer.VulkanInstance.Handle, renderer.Surface, nil)
+	window.FreeWindow(&renderer.Window)
+	sealVulkan.FreeVulkanInstance(&renderer.VulkanInstance)
 
 	return nil
 }

@@ -1,6 +1,7 @@
 package vulkan
 
 import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
@@ -10,7 +11,7 @@ type VulkanInstance struct {
 	Handle       vulkan.Instance
 	Capabilities VulkanInstanceCapabilities
 	Options      VulkanInstanceOptions
-	Devices      VulkanInstanceDevices
+	Devices      device.VulkanInstanceDevices
 }
 
 func NewVulkanInstance() (VulkanInstance, error) {
@@ -39,7 +40,7 @@ func NewVulkanInstance() (VulkanInstance, error) {
 
 func InitializeVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, surface *vulkan.Surface) error {
 	var err error
-	if instance.Devices, err = NewVulkanInstanceDevices(instance, window, surface); err != nil {
+	if instance.Devices, err = device.NewVulkanInstanceDevices(instance.Handle, window, surface); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan instance devices")
@@ -48,7 +49,7 @@ func InitializeVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Wind
 }
 
 func FreeVulkanInstance(instance *VulkanInstance) error {
-	if err := FreeVulkanInstanceDevices(&instance.Devices); err != nil {
+	if err := device.FreeVulkanInstanceDevices(&instance.Devices); err != nil {
 		return err
 	}
 	vulkan.DestroyInstance(instance.Handle, nil)

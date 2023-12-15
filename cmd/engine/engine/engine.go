@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/LamkasDev/seal/cmd/engine/input"
+	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 )
@@ -11,17 +12,17 @@ type Engine struct {
 	Input    input.Input
 }
 
-func NewEngine(rendererOptions renderer.RendererOptions) (Engine, error) {
+func NewEngine() (Engine, error) {
 	var err error
 	engine := Engine{}
 
-	engine.Renderer, err = renderer.NewRenderer(rendererOptions)
-	if err != nil {
+	progress.AdvanceLoading()
+	if engine.Renderer, err = renderer.NewRenderer(); err != nil {
 		return engine, err
 	}
 
-	engine.Input, err = input.NewInput()
-	if err != nil {
+	progress.AdvanceLoading()
+	if engine.Input, err = input.NewInput(); err != nil {
 		return engine, err
 	}
 
@@ -29,11 +30,11 @@ func NewEngine(rendererOptions renderer.RendererOptions) (Engine, error) {
 }
 
 func RunEngine(engine *Engine) error {
-	for !engine.Renderer.Options.Window.Handle.ShouldClose() {
+	for !engine.Renderer.Window.Handle.ShouldClose() {
 		if err := renderer.RunRenderer(&engine.Renderer); err != nil {
 			return err
 		}
-		if err := window.RunWindow(engine.Renderer.Options.Window); err != nil {
+		if err := window.RunWindow(&engine.Renderer.Window); err != nil {
 			return err
 		}
 		if err := input.RunInput(&engine.Input); err != nil {

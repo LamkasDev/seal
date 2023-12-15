@@ -45,7 +45,7 @@ func EnableVulkanInstanceOptionsLayer(options *VulkanInstanceOptions, capabiliti
 	if !slices.Contains(capabilities.LayerNames, layer) {
 		return errors.New(fmt.Sprintf("tried to enable layer '%s', but it is not available", layer))
 	}
-	options.CreateInfo.PpEnabledLayerNames = append(options.CreateInfo.PpEnabledLayerNames, layer)
+	options.CreateInfo.PpEnabledLayerNames = append(options.CreateInfo.PpEnabledLayerNames, fmt.Sprintf("%s\x00", layer))
 
 	return nil
 }
