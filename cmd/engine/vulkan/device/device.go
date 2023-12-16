@@ -33,8 +33,9 @@ func NewVulkanInstanceDevices(instance vulkan.Instance, window *glfw.Window, sur
 	for i := 0; i < len(rawDevices); i++ {
 		var device physical.VulkanPhysicalDevice
 		if device, err = physical.NewVulkanPhysicalDevice(rawDevices[i], window, surface); err != nil {
-			logger.DefaultLogger.Warnf("failed to create a new vulkan device")
+			logger.DefaultLogger.Warnf("failed to create a new vulkan physical device")
 		}
+		logger.DefaultLogger.Debug("created new vulkan physical device")
 		if physical.IsVulkanPhysicalDeviceSupported(&device) {
 			devices.PhysicalDevices = append(devices.PhysicalDevices, device)
 		}

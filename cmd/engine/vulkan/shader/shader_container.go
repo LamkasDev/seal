@@ -1,5 +1,10 @@
 package shader
 
+import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	"github.com/LamkasDev/seal/cmd/logger"
+)
+
 const SHADER_BASIC = "basic"
 
 var DefaultShaders = []string{
@@ -7,24 +12,27 @@ var DefaultShaders = []string{
 }
 
 type VulkanShaderContainer struct {
+	Device  *logical.VulkanLogicalDevice
 	Shaders map[string]VulkanShader
 }
 
-func NewVulkanShaderContainer() (VulkanShaderContainer, error) {
+func NewVulkanShaderContainer(device *logical.VulkanLogicalDevice) (VulkanShaderContainer, error) {
 	container := VulkanShaderContainer{
+		Device:  device,
 		Shaders: map[string]VulkanShader{},
 	}
 	for _, shader := range DefaultShaders {
-		if _, err := CreateShaderWithContainer(&container, shader); err != nil {
+		if _, err := CreateVulkanShaderWithContainer(&container, shader); err != nil {
 			return container, err
 		}
 	}
+	logger.DefaultLogger.Debug("created new vulkan shader container")
 
 	return container, nil
 }
 
-func CreateShaderWithContainer(container *VulkanShaderContainer, id string) (VulkanShader, error) {
-	shader, err := NewShader(id)
+func CreateVulkanShaderWithContainer(container *VulkanShaderContainer, id string) (VulkanShader, error) {
+	shader, err := NewVulkanShader(container.Device, id)
 	if err != nil {
 		return shader, err
 	}
@@ -34,5 +42,11 @@ func CreateShaderWithContainer(container *VulkanShaderContainer, id string) (Vul
 }
 
 func FreeVulkanShaderContainer(container *VulkanShaderContainer) error {
+	for _, shader := range container.Shaders {
+		if err := FreeVulkanShader(container.Device, &shader); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

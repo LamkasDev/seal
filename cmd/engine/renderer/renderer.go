@@ -15,8 +15,8 @@ type Renderer struct {
 	VulkanInstance  sealVulkan.VulkanInstance
 	Window          window.Window
 	Surface         vulkan.Surface
-	Swapchain       swapchain.VulkanSwapchain
 	ShaderContainer shader.VulkanShaderContainer
+	Swapchain       swapchain.VulkanSwapchain
 }
 
 func NewRenderer() (Renderer, error) {
@@ -48,12 +48,12 @@ func NewRenderer() (Renderer, error) {
 	}
 
 	progress.AdvanceLoading()
-	if renderer.Swapchain, err = swapchain.NewVulkanSwapchain(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Surface); err != nil {
+	if renderer.ShaderContainer, err = shader.NewVulkanShaderContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
 		return renderer, err
 	}
 
 	progress.AdvanceLoading()
-	if renderer.ShaderContainer, err = shader.NewVulkanShaderContainer(); err != nil {
+	if renderer.Swapchain, err = swapchain.NewVulkanSwapchain(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Surface, &renderer.ShaderContainer); err != nil {
 		return renderer, err
 	}
 

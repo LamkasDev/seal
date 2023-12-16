@@ -3,18 +3,21 @@ package swapchain
 import (
 	sealImage "github.com/LamkasDev/seal/cmd/engine/vulkan/image"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanSwapchain struct {
-	Handle  vulkan.Swapchain
-	Device  *logical.VulkanLogicalDevice
-	Options VulkanSwapchainOptions
-	Images  []sealImage.VulkanImage
+	Handle   vulkan.Swapchain
+	Device   *logical.VulkanLogicalDevice
+	Options  VulkanSwapchainOptions
+	Images   []sealImage.VulkanImage
+	Pipeline pipeline.VulkanPipeline
 }
 
-func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, surface *vulkan.Surface) (VulkanSwapchain, error) {
+func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, surface *vulkan.Surface, container *shader.VulkanShaderContainer) (VulkanSwapchain, error) {
 	var err error
 	swapchain := VulkanSwapchain{
 		Device: device,
@@ -25,6 +28,11 @@ func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, surface *vulkan.Sur
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan swapchain options")
+
+	if swapchain.Pipeline, err = pipeline.NewVulkanPipeline(device, swapchain.Options.CreateInfo.ImageFormat, swapchain.Options.CreateInfo.ImageExtent, container); err != nil {
+		logger.DefaultLogger.Panic(err.Error())
+	}
+	logger.DefaultLogger.Debug("created new vulkan swapchain pipeline")
 
 	var vulkanSwapchain vulkan.Swapchain
 	if res := vulkan.CreateSwapchain(device.Handle, &swapchain.Options.CreateInfo, nil, &vulkanSwapchain); res != vulkan.Success {
@@ -59,5 +67,7 @@ func FreeVulkanSwapchain(swapchain *VulkanSwapchain) error {
 			return err
 		}
 	}
+	pipeline.FreeVulkanPipeline(&swapchain.Pipeline)
+
 	return nil
 }
