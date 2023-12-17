@@ -1,6 +1,11 @@
 package main
 
 import (
+	"os"
+	"os/exec"
+	"runtime/pprof"
+
+	"github.com/LamkasDev/seal/cmd/common/arch"
 	"github.com/LamkasDev/seal/cmd/engine/engine"
 	sealGLFW "github.com/LamkasDev/seal/cmd/engine/glfw"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
@@ -26,6 +31,27 @@ func main() {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	defer sealVulkan.EndVulkan()
+
+	// Start profiling
+	if arch.SealDebug {
+		profileFile, err := os.Create("../cpu.prof")
+		if err != nil {
+			logger.DefaultLogger.DPanic(err)
+		}
+		imageFile, err := os.Create("../cpu.svg")
+		if err != nil {
+			logger.DefaultLogger.DPanic(err)
+		}
+		pprof.StartCPUProfile(profileFile)
+		defer func() {
+			pprof.StopCPUProfile()
+			cmd := exec.Command("go", "tool", "pprof", "-svg", "seal_engine.exe", "../cpu.prof")
+			cmd.Stdout = imageFile
+			if err := cmd.Run(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+		}()
+	}
 
 	// Setup engine
 	progress.AdvanceLoading()

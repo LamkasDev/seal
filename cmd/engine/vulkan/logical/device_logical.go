@@ -23,7 +23,6 @@ func NewVulkanLogicalDevice(physicalDevice *physical.VulkanPhysicalDevice) (Vulk
 	if device.Options, err = NewVulkanLogicalDeviceOptions(physicalDevice); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	logger.DefaultLogger.Debug("created new vulkan logical device options")
 
 	var vulkanDevice vulkan.Device
 	if res := vulkan.CreateDevice(physicalDevice.Handle, &device.Options.CreateInfo, nil, &vulkanDevice); res != vulkan.Success {

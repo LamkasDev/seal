@@ -21,7 +21,6 @@ func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *vulkan.Image
 	if imageView.Options, err = NewVulkanImageViewOptions(device, image); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	logger.DefaultLogger.Debug("created new vulkan image view options")
 
 	var vulkanImageView vulkan.ImageView
 	if res := vulkan.CreateImageView(device.Handle, &imageView.Options.CreateInfo, nil, &vulkanImageView); res != vulkan.Success {

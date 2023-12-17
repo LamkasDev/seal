@@ -11,8 +11,9 @@ const (
 	LOADING_STAGE_CREATING_WINDOW           = "renderer > creating window"
 	LOADING_STAGE_CREATING_SURFACE          = "renderer > creating surface"
 	LOADING_STAGE_CREATING_DEVICES          = "renderer > creating devices"
-	LOADING_STAGE_CREATING_SWAPCHAIN        = "renderer > creating swapchain"
 	LOADING_STAGE_CREATING_SHADER_CONTAINER = "renderer > creating shader container"
+	LOADING_STAGE_CREATING_PIPELINE         = "renderer > creating pipeline"
+	LOADING_STAGE_CREATING_SWAPCHAIN        = "renderer > creating swapchain"
 	LOADING_STAGE_CREATING_INPUT            = "creating input"
 )
 
@@ -25,8 +26,9 @@ var LoadingStages = []string{
 	LOADING_STAGE_CREATING_WINDOW,
 	LOADING_STAGE_CREATING_SURFACE,
 	LOADING_STAGE_CREATING_DEVICES,
-	LOADING_STAGE_CREATING_SWAPCHAIN,
 	LOADING_STAGE_CREATING_SHADER_CONTAINER,
+	LOADING_STAGE_CREATING_PIPELINE,
+	LOADING_STAGE_CREATING_SWAPCHAIN,
 	LOADING_STAGE_CREATING_INPUT,
 }
 var LoadingStagesLength = len(LoadingStages)

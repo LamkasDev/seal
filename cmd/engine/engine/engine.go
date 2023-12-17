@@ -1,10 +1,13 @@
 package engine
 
 import (
+	"time"
+
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	"github.com/LamkasDev/seal/cmd/engine/window"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type Engine struct {
@@ -30,16 +33,39 @@ func NewEngine() (Engine, error) {
 }
 
 func RunEngine(engine *Engine) error {
+	ups, fps := 30, 60
+	last := time.Now().UnixMilli()
+	lastUpdate, lastFrame := last, last
+	deltaUpdate, deltaFrame := float64(0), float64(0)
+	targetUpdate, targetFrame := float64(1000/ups), float64(1000/fps)
+
 	for !engine.Renderer.Window.Handle.ShouldClose() {
-		if err := renderer.RunRenderer(&engine.Renderer); err != nil {
-			return err
+		glfw.PollEvents()
+
+		now := time.Now().UnixMilli()
+		diff := float64(now - last)
+		deltaUpdate += diff / targetUpdate
+		deltaFrame += diff / targetFrame
+		if deltaUpdate > 1 {
+			if err := input.RunInput(&engine.Input); err != nil {
+				return err
+			}
+			_ = now - lastUpdate
+			lastUpdate = now
+			deltaUpdate--
 		}
-		if err := window.RunWindow(&engine.Renderer.Window); err != nil {
-			return err
+		if deltaFrame > 1 {
+			if err := renderer.RunRenderer(&engine.Renderer); err != nil {
+				return err
+			}
+			if err := window.RunWindow(&engine.Renderer.Window); err != nil {
+				return err
+			}
+			_ = now - lastFrame
+			lastFrame = now
+			deltaFrame--
 		}
-		if err := input.RunInput(&engine.Input); err != nil {
-			return err
-		}
+		last = now
 	}
 
 	return nil

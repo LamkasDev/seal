@@ -6,6 +6,7 @@ type VulkanRenderPassOptions struct {
 	ColorAttachmentDescription vulkan.AttachmentDescription
 	ColorAttachmentReference   vulkan.AttachmentReference
 	SubpassDescription         vulkan.SubpassDescription
+	SubpassDependency          vulkan.SubpassDependency
 	CreateInfo                 vulkan.RenderPassCreateInfo
 }
 
@@ -20,6 +21,14 @@ func NewVulkanRenderPassOptions(format vulkan.Format) (VulkanRenderPassOptions, 
 			StencilStoreOp: vulkan.AttachmentStoreOpDontCare,
 			InitialLayout:  vulkan.ImageLayoutUndefined,
 			FinalLayout:    vulkan.ImageLayoutPresentSrc,
+		},
+		SubpassDependency: vulkan.SubpassDependency{
+			SrcSubpass:    vulkan.SubpassExternal,
+			DstSubpass:    0,
+			SrcStageMask:  vulkan.PipelineStageFlags(vulkan.PipelineStageColorAttachmentOutputBit),
+			SrcAccessMask: 0,
+			DstStageMask:  vulkan.PipelineStageFlags(vulkan.PipelineStageColorAttachmentOutputBit),
+			DstAccessMask: vulkan.AccessFlags(vulkan.AccessColorAttachmentWriteBit),
 		},
 	}
 	options.ColorAttachmentReference = vulkan.AttachmentReference{
@@ -37,6 +46,8 @@ func NewVulkanRenderPassOptions(format vulkan.Format) (VulkanRenderPassOptions, 
 		PAttachments:    []vulkan.AttachmentDescription{options.ColorAttachmentDescription},
 		SubpassCount:    1,
 		PSubpasses:      []vulkan.SubpassDescription{options.SubpassDescription},
+		DependencyCount: 1,
+		PDependencies:   []vulkan.SubpassDependency{options.SubpassDependency},
 	}
 
 	return options, nil

@@ -1,4 +1,4 @@
-package pipeline
+package layout
 
 import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
@@ -8,17 +8,19 @@ import (
 
 type VulkanPipelineLayout struct {
 	Handle  vulkan.PipelineLayout
+	Device  *logical.VulkanLogicalDevice
 	Options VulkanPipelineLayoutOptions
 }
 
 func NewVulkanPipelineLayout(device *logical.VulkanLogicalDevice) (VulkanPipelineLayout, error) {
 	var err error
-	pipelineLayout := VulkanPipelineLayout{}
+	pipelineLayout := VulkanPipelineLayout{
+		Device: device,
+	}
 
 	if pipelineLayout.Options, err = NewVulkanPipelineLayoutOptions(); err != nil {
 		return pipelineLayout, err
 	}
-	logger.DefaultLogger.Debug("created new vulkan pipeline layout options")
 
 	var vulkanPipelineLayout vulkan.PipelineLayout
 	if res := vulkan.CreatePipelineLayout(device.Handle, &pipelineLayout.Options.CreateInfo, nil, &vulkanPipelineLayout); res != vulkan.Success {
@@ -28,4 +30,9 @@ func NewVulkanPipelineLayout(device *logical.VulkanLogicalDevice) (VulkanPipelin
 	logger.DefaultLogger.Debug("created new vulkan pipeline layout")
 
 	return pipelineLayout, nil
+}
+
+func FreeVulkanPipelineLayout(layout *VulkanPipelineLayout) error {
+	vulkan.DestroyPipelineLayout(layout.Device.Handle, layout.Handle, nil)
+	return nil
 }

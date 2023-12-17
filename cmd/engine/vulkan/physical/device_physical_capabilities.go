@@ -108,6 +108,7 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *g
 	}
 
 	capabilities.Surface.ImageExtent = capabilities.Surface.Capabilities.CurrentExtent
+	capabilities.Surface.ImageExtent.Deref()
 	if capabilities.Surface.ImageExtent.Width == vulkan.MaxUint32 {
 		var w, h int
 		w, h = window.GetFramebufferSize()

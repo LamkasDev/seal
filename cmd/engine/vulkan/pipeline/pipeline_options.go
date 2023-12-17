@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
@@ -20,7 +21,7 @@ type VulkanPipelineOptions struct {
 	CreateInfo                vulkan.GraphicsPipelineCreateInfo
 }
 
-func NewVulkanPipelineOptions(layout *VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) (VulkanPipelineOptions, error) {
+func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) (VulkanPipelineOptions, error) {
 	options := VulkanPipelineOptions{
 		DynamicState: vulkan.PipelineDynamicStateCreateInfo{
 			SType:             vulkan.StructureTypePipelineDynamicStateCreateInfo,

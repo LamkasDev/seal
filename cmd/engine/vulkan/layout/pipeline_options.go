@@ -1,4 +1,4 @@
-package pipeline
+package layout
 
 import (
 	"github.com/vulkan-go/vulkan"

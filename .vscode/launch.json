@@ -12,7 +12,7 @@
             "program": "cmd/engine/main.go",
             "buildFlags": "-tags 'seal64 sealdebug'",
             "output": "build/seal64/seal_engine.exe",
-            "cwd": "build/seal64"
+            "cwd": "build/seal64",
         }
     ]
 }

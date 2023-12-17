@@ -1,9 +1,5 @@
 package input
 
-import (
-	"github.com/go-gl/glfw/v3.3/glfw"
-)
-
 type Input struct {
 }
 
@@ -14,7 +10,6 @@ func NewInput() (Input, error) {
 }
 
 func RunInput(input *Input) error {
-	glfw.PollEvents()
 	return nil
 }
 

@@ -8,12 +8,15 @@ import (
 
 type VulkanRenderPass struct {
 	Handle  vulkan.RenderPass
+	Device  *logical.VulkanLogicalDevice
 	Options VulkanRenderPassOptions
 }
 
 func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, format vulkan.Format) (VulkanRenderPass, error) {
 	var err error
-	pass := VulkanRenderPass{}
+	pass := VulkanRenderPass{
+		Device: device,
+	}
 
 	if pass.Options, err = NewVulkanRenderPassOptions(format); err != nil {
 		return pass, err
@@ -27,4 +30,9 @@ func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, format vulkan.Form
 	logger.DefaultLogger.Debug("created new vulkan render pass")
 
 	return pass, nil
+}
+
+func FreeVulkanRenderPass(pass *VulkanRenderPass) error {
+	vulkan.DestroyRenderPass(pass.Device.Handle, pass.Handle, nil)
+	return nil
 }
