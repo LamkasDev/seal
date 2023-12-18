@@ -1,7 +1,6 @@
 package vulkan
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 
@@ -43,7 +42,7 @@ func NewVulkanInstanceOptions(instance *VulkanInstance) (VulkanInstanceOptions, 
 
 func EnableVulkanInstanceOptionsLayer(options *VulkanInstanceOptions, capabilities *VulkanInstanceCapabilities, layer string) error {
 	if !slices.Contains(capabilities.LayerNames, layer) {
-		return errors.New(fmt.Sprintf("tried to enable layer '%s', but it is not available", layer))
+		return fmt.Errorf("tried to enable layer '%s', but it is not available", layer)
 	}
 	options.CreateInfo.PpEnabledLayerNames = append(options.CreateInfo.PpEnabledLayerNames, fmt.Sprintf("%s\x00", layer))
 

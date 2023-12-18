@@ -2,8 +2,8 @@ package vulkan
 
 import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
+	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -30,7 +30,7 @@ func NewVulkanInstance() (VulkanInstance, error) {
 
 	var vulkanInstance vulkan.Instance
 	if res := vulkan.CreateInstance(&instance.Options.CreateInfo, nil, &vulkanInstance); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
 	}
 	instance.Handle = vulkanInstance
 	logger.DefaultLogger.Debug("created new vulkan instance")
@@ -38,9 +38,9 @@ func NewVulkanInstance() (VulkanInstance, error) {
 	return instance, nil
 }
 
-func InitializeVulkanInstanceDevices(instance *VulkanInstance, window *glfw.Window, surface *vulkan.Surface) error {
+func InitializeVulkanInstanceDevices(instance *VulkanInstance, cwindow *window.Window, surface *vulkan.Surface) error {
 	var err error
-	if instance.Devices, err = device.NewVulkanInstanceDevices(instance.Handle, window, surface); err != nil {
+	if instance.Devices, err = device.NewVulkanInstanceDevices(instance.Handle, cwindow, surface); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 	logger.DefaultLogger.Debug("created new vulkan instance devices")

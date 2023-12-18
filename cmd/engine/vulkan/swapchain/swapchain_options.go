@@ -1,7 +1,8 @@
 package swapchain
 
 import (
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
+	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -9,32 +10,34 @@ type VulkanSwapchainOptions struct {
 	CreateInfo vulkan.SwapchainCreateInfo
 }
 
-func NewVulkanSwapchainOptions(device *logical.VulkanLogicalDevice, surface *vulkan.Surface) (VulkanSwapchainOptions, error) {
+func NewVulkanSwapchainOptions(pipeline *pipeline.VulkanPipeline, surface *vulkan.Surface, old *VulkanSwapchain) VulkanSwapchainOptions {
 	options := VulkanSwapchainOptions{}
 	options.CreateInfo = vulkan.SwapchainCreateInfo{
 		SType:            vulkan.StructureTypeSwapchainCreateInfo,
 		Surface:          *surface,
-		MinImageCount:    device.Physical.Capabilities.Surface.ImageCount,
-		ImageFormat:      device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].Format,
-		ImageColorSpace:  device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].ColorSpace,
-		ImageExtent:      device.Physical.Capabilities.Surface.ImageExtent,
+		MinImageCount:    pipeline.Device.Physical.Capabilities.Surface.ImageCount,
+		ImageFormat:      pipeline.Device.Physical.Capabilities.Surface.ImageFormats[pipeline.Device.Physical.Capabilities.Surface.ImageFormatIndex].Format,
+		ImageColorSpace:  pipeline.Device.Physical.Capabilities.Surface.ImageFormats[pipeline.Device.Physical.Capabilities.Surface.ImageFormatIndex].ColorSpace,
+		ImageExtent:      window.GetWindowImageExtent(pipeline.Window),
 		ImageArrayLayers: 1,
 		ImageUsage:       vulkan.ImageUsageFlags(vulkan.ImageUsageColorAttachmentBit),
-		PreTransform:     device.Physical.Capabilities.Surface.Capabilities.CurrentTransform,
+		PreTransform:     pipeline.Device.Physical.Capabilities.Surface.Capabilities.CurrentTransform,
 		CompositeAlpha:   vulkan.CompositeAlphaOpaqueBit,
-		PresentMode:      device.Physical.Capabilities.Surface.PresentModes[device.Physical.Capabilities.Surface.PresentModeIndex],
+		PresentMode:      pipeline.Device.Physical.Capabilities.Surface.PresentModes[pipeline.Device.Physical.Capabilities.Surface.PresentModeIndex],
 		Clipped:          vulkan.True,
-		OldSwapchain:     nil,
 	}
-	if device.Physical.Capabilities.Queue.GraphicsIndex != device.Physical.Capabilities.Queue.PresentationIndex {
+	if old != nil {
+		options.CreateInfo.OldSwapchain = old.Handle
+	}
+	if pipeline.Device.Physical.Capabilities.Queue.GraphicsIndex != pipeline.Device.Physical.Capabilities.Queue.PresentationIndex {
 		options.CreateInfo.ImageSharingMode = vulkan.SharingModeConcurrent
 		options.CreateInfo.QueueFamilyIndexCount = 2
-		options.CreateInfo.PQueueFamilyIndices = []uint32{uint32(device.Physical.Capabilities.Queue.GraphicsIndex), uint32(device.Physical.Capabilities.Queue.PresentationIndex)}
+		options.CreateInfo.PQueueFamilyIndices = []uint32{uint32(pipeline.Device.Physical.Capabilities.Queue.GraphicsIndex), uint32(pipeline.Device.Physical.Capabilities.Queue.PresentationIndex)}
 	} else {
 		options.CreateInfo.ImageSharingMode = vulkan.SharingModeExclusive
 		options.CreateInfo.QueueFamilyIndexCount = 0
 		options.CreateInfo.PQueueFamilyIndices = nil
 	}
 
-	return options, nil
+	return options
 }

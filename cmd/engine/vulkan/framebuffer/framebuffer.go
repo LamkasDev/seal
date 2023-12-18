@@ -16,19 +16,16 @@ type VulkanFramebuffer struct {
 }
 
 func NewVulkanFramebuffer(device *logical.VulkanLogicalDevice, pass *pass.VulkanRenderPass, imageview *image.VulkanImageView, extent vulkan.Extent2D) (VulkanFramebuffer, error) {
-	var err error
 	framebuffer := VulkanFramebuffer{
 		Device:    device,
 		Imageview: imageview,
-	}
-
-	if framebuffer.Options, err = NewVulkanFramebufferOptions(pass, imageview, extent); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
+		Options:   NewVulkanFramebufferOptions(pass, imageview, extent),
 	}
 
 	var vulkanFramebuffer vulkan.Framebuffer
 	if res := vulkan.CreateFramebuffer(device.Handle, &framebuffer.Options.CreateInfo, nil, &vulkanFramebuffer); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return framebuffer, vulkan.Error(res)
 	}
 	framebuffer.Handle = vulkanFramebuffer
 	logger.DefaultLogger.Debug("created new vulkan framebuffer")

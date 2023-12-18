@@ -16,12 +16,12 @@ func NewVulkanInstanceCapabilities() (VulkanInstanceCapabilities, error) {
 
 	var layerCount uint32
 	if res := vulkan.EnumerateInstanceLayerProperties(&layerCount, nil); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
 	}
 	capabilities.Layers = make([]vulkan.LayerProperties, layerCount)
 	capabilities.LayerNames = make([]string, layerCount)
 	if res := vulkan.EnumerateInstanceLayerProperties(&layerCount, capabilities.Layers); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
 	}
 	for i := 0; i < len(capabilities.Layers); i++ {
 		capabilities.Layers[i].Deref()

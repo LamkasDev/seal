@@ -6,8 +6,8 @@ import (
 
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/physical"
+	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -16,23 +16,25 @@ type VulkanInstanceDevices struct {
 	LogicalDevice   logical.VulkanLogicalDevice
 }
 
-func NewVulkanInstanceDevices(instance vulkan.Instance, window *glfw.Window, surface *vulkan.Surface) (VulkanInstanceDevices, error) {
+func NewVulkanInstanceDevices(instance vulkan.Instance, cwindow *window.Window, surface *vulkan.Surface) (VulkanInstanceDevices, error) {
 	var err error
 	devices := VulkanInstanceDevices{}
 
-	var rawDeviceCount uint32
-	if res := vulkan.EnumeratePhysicalDevices(instance, &rawDeviceCount, nil); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	var rawDevicesCount uint32
+	if res := vulkan.EnumeratePhysicalDevices(instance, &rawDevicesCount, nil); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return devices, vulkan.Error(res)
 	}
-	rawDevices := make([]vulkan.PhysicalDevice, rawDeviceCount)
-	if res := vulkan.EnumeratePhysicalDevices(instance, &rawDeviceCount, rawDevices); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	rawDevices := make([]vulkan.PhysicalDevice, rawDevicesCount)
+	if res := vulkan.EnumeratePhysicalDevices(instance, &rawDevicesCount, rawDevices); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return devices, vulkan.Error(res)
 	}
 
 	devices.PhysicalDevices = []physical.VulkanPhysicalDevice{}
 	for i := 0; i < len(rawDevices); i++ {
 		var device physical.VulkanPhysicalDevice
-		if device, err = physical.NewVulkanPhysicalDevice(rawDevices[i], window, surface); err != nil {
+		if device, err = physical.NewVulkanPhysicalDevice(rawDevices[i], cwindow, surface); err != nil {
 			logger.DefaultLogger.Warnf("failed to create a new vulkan physical device")
 		}
 		logger.DefaultLogger.Debug("created new vulkan physical device")
@@ -48,12 +50,21 @@ func NewVulkanInstanceDevices(instance vulkan.Instance, window *glfw.Window, sur
 		return devices, errors.New("no suitable physical device found")
 	}
 
-	// this will work, as long as the array doesn't relocate :)
 	if devices.LogicalDevice, err = logical.NewVulkanLogicalDevice(&devices.PhysicalDevices[0]); err != nil {
 		return devices, err
 	}
 
 	return devices, nil
+}
+
+func UpdateVulkanInstanceDevices(devices *VulkanInstanceDevices) error {
+	for i := 0; i < len(devices.PhysicalDevices); i++ {
+		if err := physical.UpdateVulkanPhysicalDevice(&devices.PhysicalDevices[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func FreeVulkanInstanceDevices(devices *VulkanInstanceDevices) error {

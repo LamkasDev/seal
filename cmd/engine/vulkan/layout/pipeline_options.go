@@ -8,12 +8,12 @@ type VulkanPipelineLayoutOptions struct {
 	CreateInfo vulkan.PipelineLayoutCreateInfo
 }
 
-func NewVulkanPipelineLayoutOptions() (VulkanPipelineLayoutOptions, error) {
+func NewVulkanPipelineLayoutOptions() VulkanPipelineLayoutOptions {
 	options := VulkanPipelineLayoutOptions{
 		CreateInfo: vulkan.PipelineLayoutCreateInfo{
 			SType: vulkan.StructureTypePipelineLayoutCreateInfo,
 		},
 	}
 
-	return options, nil
+	return options
 }

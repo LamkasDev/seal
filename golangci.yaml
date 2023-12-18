@@ -8,13 +8,13 @@ linters:
         - comment
         - complexity
         - error
-        # - format
-        # - import
+        - format
+        - import
         - metalinter
         - module
         - performance
         - sql
-        # - style
+        - style
         - test
         - unused
     disable: 

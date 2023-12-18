@@ -8,7 +8,7 @@ type VulkanFenceOptions struct {
 	CreateInfo vulkan.FenceCreateInfo
 }
 
-func NewVulkanFenceOptions(flags vulkan.FenceCreateFlags) (VulkanFenceOptions, error) {
+func NewVulkanFenceOptions(flags vulkan.FenceCreateFlags) VulkanFenceOptions {
 	options := VulkanFenceOptions{
 		CreateInfo: vulkan.FenceCreateInfo{
 			SType: vulkan.StructureTypeFenceCreateInfo,
@@ -16,5 +16,5 @@ func NewVulkanFenceOptions(flags vulkan.FenceCreateFlags) (VulkanFenceOptions, e
 		},
 	}
 
-	return options, nil
+	return options
 }

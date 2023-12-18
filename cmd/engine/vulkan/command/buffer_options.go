@@ -8,7 +8,7 @@ type VulkanCommandBufferOptions struct {
 	AllocateInfo vulkan.CommandBufferAllocateInfo
 }
 
-func NewVulkanCommandBufferOptions(pool *VulkanCommandPool) (VulkanCommandBufferOptions, error) {
+func NewVulkanCommandBufferOptions(pool *VulkanCommandPool) VulkanCommandBufferOptions {
 	options := VulkanCommandBufferOptions{
 		AllocateInfo: vulkan.CommandBufferAllocateInfo{
 			SType:              vulkan.StructureTypeCommandBufferAllocateInfo,
@@ -18,5 +18,5 @@ func NewVulkanCommandBufferOptions(pool *VulkanCommandPool) (VulkanCommandBuffer
 		},
 	}
 
-	return options, nil
+	return options
 }

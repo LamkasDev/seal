@@ -10,7 +10,7 @@ type VulkanFramebufferOptions struct {
 	CreateInfo vulkan.FramebufferCreateInfo
 }
 
-func NewVulkanFramebufferOptions(pass *pass.VulkanRenderPass, imageview *image.VulkanImageView, extent vulkan.Extent2D) (VulkanFramebufferOptions, error) {
+func NewVulkanFramebufferOptions(pass *pass.VulkanRenderPass, imageview *image.VulkanImageView, extent vulkan.Extent2D) VulkanFramebufferOptions {
 	options := VulkanFramebufferOptions{
 		CreateInfo: vulkan.FramebufferCreateInfo{
 			SType:           vulkan.StructureTypeFramebufferCreateInfo,
@@ -23,5 +23,5 @@ func NewVulkanFramebufferOptions(pass *pass.VulkanRenderPass, imageview *image.V
 		},
 	}
 
-	return options, nil
+	return options
 }

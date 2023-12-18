@@ -50,7 +50,7 @@ func NewVulkanShaderModule(device *logical.VulkanLogicalDevice, id string, stage
 
 	var vulkanShaderModule vulkan.ShaderModule
 	if res := vulkan.CreateShaderModule(device.Handle, &shaderModule.Options.CreateInfo, nil, &vulkanShaderModule); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
 	}
 	shaderModule.Handle = vulkanShaderModule
 	logger.DefaultLogger.Debug("created new vulkan shader module")

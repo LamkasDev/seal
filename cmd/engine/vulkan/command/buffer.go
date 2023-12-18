@@ -14,19 +14,16 @@ type VulkanCommandBuffer struct {
 }
 
 func NewVulkanCommandBuffer(device *logical.VulkanLogicalDevice, pool *VulkanCommandPool) (VulkanCommandBuffer, error) {
-	var err error
 	commandBuffer := VulkanCommandBuffer{
-		Device: device,
-		Pool:   pool,
-	}
-
-	if commandBuffer.Options, err = NewVulkanCommandBufferOptions(pool); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
+		Device:  device,
+		Pool:    pool,
+		Options: NewVulkanCommandBufferOptions(pool),
 	}
 
 	vulkanCommandBuffers := make([]vulkan.CommandBuffer, 1)
 	if res := vulkan.AllocateCommandBuffers(device.Handle, &commandBuffer.Options.AllocateInfo, vulkanCommandBuffers); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return commandBuffer, vulkan.Error(res)
 	}
 	commandBuffer.Handle = vulkanCommandBuffers[0]
 	logger.DefaultLogger.Debug("created new vulkan command buffer")

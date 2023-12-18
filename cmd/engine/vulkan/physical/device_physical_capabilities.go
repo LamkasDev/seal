@@ -2,8 +2,8 @@ package physical
 
 import (
 	"github.com/LamkasDev/seal/cmd/common/ctool"
+	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/samber/lo"
 	"github.com/vulkan-go/vulkan"
 )
@@ -31,23 +31,27 @@ type VulkanPhysicalDeviceSurfaceCapabilities struct {
 	ImageCount       uint32
 }
 
-func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *glfw.Window, surface *vulkan.Surface) (VulkanPhysicalDeviceCapabilities, error) {
+func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) (VulkanPhysicalDeviceCapabilities, error) {
 	capabilities := VulkanPhysicalDeviceCapabilities{}
 
+	// Create extension capabilities
 	var extensionsCount uint32
 	if res := vulkan.EnumerateDeviceExtensionProperties(handle, "", &extensionsCount, nil); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	capabilities.Extensions = make([]vulkan.ExtensionProperties, extensionsCount)
 	capabilities.ExtensionNames = make([]string, extensionsCount)
 	if res := vulkan.EnumerateDeviceExtensionProperties(handle, "", &extensionsCount, capabilities.Extensions); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	for i := 0; i < len(capabilities.Extensions); i++ {
 		capabilities.Extensions[i].Deref()
 		capabilities.ExtensionNames[i] = ctool.ByteArray256ToString(capabilities.Extensions[i].ExtensionName)
 	}
 
+	// Create queue capabilities
 	var queueFamiliesCount uint32
 	vulkan.GetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nil)
 	capabilities.Queue.Families = make([]vulkan.QueueFamilyProperties, queueFamiliesCount)
@@ -62,7 +66,8 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *g
 		if capabilities.Queue.PresentationIndex == -1 {
 			var support vulkan.Bool32
 			if res := vulkan.GetPhysicalDeviceSurfaceSupport(handle, uint32(i), *surface, &support); res != vulkan.Success {
-				logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+				logger.DefaultLogger.Error(vulkan.Error(res))
+				return capabilities, vulkan.Error(res)
 			}
 			if support == 1 {
 				capabilities.Queue.PresentationIndex = i
@@ -70,18 +75,20 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *g
 		}
 	}
 
-	if res := vulkan.GetPhysicalDeviceSurfaceCapabilities(handle, *surface, &capabilities.Surface.Capabilities); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+	// Create surface capabilities
+	if err := UpdateVulkanPhysicalDeviceCapabilities(&capabilities, handle, cwindow, surface); err != nil {
+		return capabilities, err
 	}
-	capabilities.Surface.Capabilities.Deref()
 
 	var surfaceFormatsCount uint32
 	if res := vulkan.GetPhysicalDeviceSurfaceFormats(handle, *surface, &surfaceFormatsCount, nil); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	capabilities.Surface.ImageFormats = make([]vulkan.SurfaceFormat, surfaceFormatsCount)
 	if res := vulkan.GetPhysicalDeviceSurfaceFormats(handle, *surface, &surfaceFormatsCount, capabilities.Surface.ImageFormats); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	for i := 0; i < len(capabilities.Surface.ImageFormats); i++ {
 		capabilities.Surface.ImageFormats[i].Deref()
@@ -94,11 +101,13 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *g
 
 	var surfacePresentModesCount uint32
 	if res := vulkan.GetPhysicalDeviceSurfacePresentModes(handle, *surface, &surfacePresentModesCount, nil); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	capabilities.Surface.PresentModes = make([]vulkan.PresentMode, surfacePresentModesCount)
 	if res := vulkan.GetPhysicalDeviceSurfacePresentModes(handle, *surface, &surfacePresentModesCount, capabilities.Surface.PresentModes); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return capabilities, vulkan.Error(res)
 	}
 	for i := 0; i < len(capabilities.Surface.PresentModes); i++ {
 		if capabilities.Surface.PresentModes[i] == vulkan.PresentModeMailbox {
@@ -107,19 +116,29 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, window *g
 		}
 	}
 
-	capabilities.Surface.ImageExtent = capabilities.Surface.Capabilities.CurrentExtent
-	capabilities.Surface.ImageExtent.Deref()
-	if capabilities.Surface.ImageExtent.Width == vulkan.MaxUint32 {
-		var w, h int
-		w, h = window.GetFramebufferSize()
-		capabilities.Surface.ImageExtent.Width = lo.Clamp(uint32(w), capabilities.Surface.Capabilities.MinImageExtent.Width, capabilities.Surface.Capabilities.MaxImageExtent.Width)
-		capabilities.Surface.ImageExtent.Height = lo.Clamp(uint32(h), capabilities.Surface.Capabilities.MinImageExtent.Height, capabilities.Surface.Capabilities.MaxImageExtent.Height)
-	}
-
 	capabilities.Surface.ImageCount = capabilities.Surface.Capabilities.MinImageCount + 1
 	if capabilities.Surface.Capabilities.MaxImageCount > 0 && capabilities.Surface.ImageCount > capabilities.Surface.Capabilities.MaxImageCount {
 		capabilities.Surface.ImageCount = capabilities.Surface.Capabilities.MaxImageCount
 	}
 
 	return capabilities, nil
+}
+
+func UpdateVulkanPhysicalDeviceCapabilities(capabilities *VulkanPhysicalDeviceCapabilities, handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) error {
+	if res := vulkan.GetPhysicalDeviceSurfaceCapabilities(handle, *surface, &capabilities.Surface.Capabilities); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return vulkan.Error(res)
+	}
+	capabilities.Surface.Capabilities.Deref()
+
+	capabilities.Surface.ImageExtent = capabilities.Surface.Capabilities.CurrentExtent
+	capabilities.Surface.ImageExtent.Deref()
+	if capabilities.Surface.ImageExtent.Width == vulkan.MaxUint32 {
+		var w, h int
+		w, h = cwindow.Handle.GetFramebufferSize()
+		capabilities.Surface.ImageExtent.Width = lo.Clamp(uint32(w), capabilities.Surface.Capabilities.MinImageExtent.Width, capabilities.Surface.Capabilities.MaxImageExtent.Width)
+		capabilities.Surface.ImageExtent.Height = lo.Clamp(uint32(h), capabilities.Surface.Capabilities.MinImageExtent.Height, capabilities.Surface.Capabilities.MaxImageExtent.Height)
+	}
+
+	return nil
 }

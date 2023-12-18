@@ -10,7 +10,7 @@ type VulkanRenderPassOptions struct {
 	CreateInfo                 vulkan.RenderPassCreateInfo
 }
 
-func NewVulkanRenderPassOptions(format vulkan.Format) (VulkanRenderPassOptions, error) {
+func NewVulkanRenderPassOptions(format vulkan.Format) VulkanRenderPassOptions {
 	options := VulkanRenderPassOptions{
 		ColorAttachmentDescription: vulkan.AttachmentDescription{
 			Format:         format,
@@ -50,5 +50,5 @@ func NewVulkanRenderPassOptions(format vulkan.Format) (VulkanRenderPassOptions, 
 		PDependencies:   []vulkan.SubpassDependency{options.SubpassDependency},
 	}
 
-	return options, nil
+	return options
 }

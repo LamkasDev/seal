@@ -7,7 +7,7 @@ type VulkanViewport struct {
 	Scissor  vulkan.Rect2D
 }
 
-func NewVulkanViewport(extent vulkan.Extent2D) (VulkanViewport, error) {
+func NewVulkanViewport(extent vulkan.Extent2D) VulkanViewport {
 	viewport := VulkanViewport{
 		Viewport: vulkan.Viewport{
 			X:        0,
@@ -23,5 +23,5 @@ func NewVulkanViewport(extent vulkan.Extent2D) (VulkanViewport, error) {
 		},
 	}
 
-	return viewport, nil
+	return viewport
 }

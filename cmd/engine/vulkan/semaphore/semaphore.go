@@ -13,18 +13,15 @@ type VulkanSemaphore struct {
 }
 
 func NewVulkanSemaphore(device *logical.VulkanLogicalDevice) (VulkanSemaphore, error) {
-	var err error
 	semaphore := VulkanSemaphore{
-		Device: device,
-	}
-
-	if semaphore.Options, err = NewVulkanSemaphoreOptions(); err != nil {
-		return semaphore, err
+		Device:  device,
+		Options: NewVulkanSemaphoreOptions(),
 	}
 
 	var vulkanSemaphore vulkan.Semaphore
 	if res := vulkan.CreateSemaphore(device.Handle, &semaphore.Options.CreateInfo, nil, &vulkanSemaphore); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return semaphore, vulkan.Error(res)
 	}
 	semaphore.Handle = vulkanSemaphore
 	logger.DefaultLogger.Debug("created new vulkan semaphore")

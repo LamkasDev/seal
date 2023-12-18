@@ -13,18 +13,15 @@ type VulkanFence struct {
 }
 
 func NewVulkanFence(device *logical.VulkanLogicalDevice, flags vulkan.FenceCreateFlags) (VulkanFence, error) {
-	var err error
 	fence := VulkanFence{
-		Device: device,
-	}
-
-	if fence.Options, err = NewVulkanFenceOptions(flags); err != nil {
-		return fence, err
+		Device:  device,
+		Options: NewVulkanFenceOptions(flags),
 	}
 
 	var vulkanFence vulkan.Fence
 	if res := vulkan.CreateFence(device.Handle, &fence.Options.CreateInfo, nil, &vulkanFence); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return fence, vulkan.Error(res)
 	}
 	fence.Handle = vulkanFence
 	logger.DefaultLogger.Debug("created new vulkan fence")

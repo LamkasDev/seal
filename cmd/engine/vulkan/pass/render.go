@@ -13,18 +13,15 @@ type VulkanRenderPass struct {
 }
 
 func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, format vulkan.Format) (VulkanRenderPass, error) {
-	var err error
 	pass := VulkanRenderPass{
-		Device: device,
-	}
-
-	if pass.Options, err = NewVulkanRenderPassOptions(format); err != nil {
-		return pass, err
+		Device:  device,
+		Options: NewVulkanRenderPassOptions(format),
 	}
 
 	var vulkanRenderPass vulkan.RenderPass
 	if res := vulkan.CreateRenderPass(device.Handle, &pass.Options.CreateInfo, nil, &vulkanRenderPass); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return pass, vulkan.Error(res)
 	}
 	pass.Handle = vulkanRenderPass
 	logger.DefaultLogger.Debug("created new vulkan render pass")

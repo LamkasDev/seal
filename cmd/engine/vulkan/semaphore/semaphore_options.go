@@ -8,12 +8,12 @@ type VulkanSemaphoreOptions struct {
 	CreateInfo vulkan.SemaphoreCreateInfo
 }
 
-func NewVulkanSemaphoreOptions() (VulkanSemaphoreOptions, error) {
+func NewVulkanSemaphoreOptions() VulkanSemaphoreOptions {
 	options := VulkanSemaphoreOptions{
 		CreateInfo: vulkan.SemaphoreCreateInfo{
 			SType: vulkan.StructureTypeSemaphoreCreateInfo,
 		},
 	}
 
-	return options, nil
+	return options
 }

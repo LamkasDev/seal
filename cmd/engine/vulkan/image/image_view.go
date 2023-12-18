@@ -13,18 +13,15 @@ type VulkanImageView struct {
 }
 
 func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *vulkan.Image) (VulkanImageView, error) {
-	var err error
 	imageView := VulkanImageView{
-		Device: device,
-	}
-
-	if imageView.Options, err = NewVulkanImageViewOptions(device, image); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
+		Device:  device,
+		Options: NewVulkanImageViewOptions(device, image),
 	}
 
 	var vulkanImageView vulkan.ImageView
 	if res := vulkan.CreateImageView(device.Handle, &imageView.Options.CreateInfo, nil, &vulkanImageView); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return imageView, vulkan.Error(res)
 	}
 	imageView.Handle = vulkanImageView
 	logger.DefaultLogger.Debug("created new vulkan image view")

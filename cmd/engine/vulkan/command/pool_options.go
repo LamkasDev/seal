@@ -8,14 +8,14 @@ type VulkanCommandPoolOptions struct {
 	CreateInfo vulkan.CommandPoolCreateInfo
 }
 
-func NewVulkanCommandPoolOptions(family uint32) (VulkanCommandPoolOptions, error) {
+func NewVulkanCommandPoolOptions(queueFamilyIndex uint32) VulkanCommandPoolOptions {
 	options := VulkanCommandPoolOptions{
 		CreateInfo: vulkan.CommandPoolCreateInfo{
 			SType:            vulkan.StructureTypeCommandPoolCreateInfo,
 			Flags:            vulkan.CommandPoolCreateFlags(vulkan.CommandPoolCreateResetCommandBufferBit),
-			QueueFamilyIndex: family,
+			QueueFamilyIndex: queueFamilyIndex,
 		},
 	}
 
-	return options, nil
+	return options
 }

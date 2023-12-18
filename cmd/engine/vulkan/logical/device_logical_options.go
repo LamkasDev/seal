@@ -14,7 +14,7 @@ type VulkanLogicalDeviceOptions struct {
 	CreateInfo      vulkan.DeviceCreateInfo
 }
 
-func NewVulkanLogicalDeviceOptions(device *physical.VulkanPhysicalDevice) (VulkanLogicalDeviceOptions, error) {
+func NewVulkanLogicalDeviceOptions(device *physical.VulkanPhysicalDevice) VulkanLogicalDeviceOptions {
 	options := VulkanLogicalDeviceOptions{
 		Features: []vulkan.PhysicalDeviceFeatures{
 			{},
@@ -34,7 +34,7 @@ func NewVulkanLogicalDeviceOptions(device *physical.VulkanPhysicalDevice) (Vulka
 	options.CreateInfo.EnabledExtensionCount = uint32(len(options.CreateInfo.PpEnabledExtensionNames))
 	options.CreateInfo.QueueCreateInfoCount = uint32(len(options.CreateInfo.PQueueCreateInfos))
 
-	return options, nil
+	return options
 }
 
 func AddVulkanLogicalDeviceOptionsQueue(options *VulkanLogicalDeviceOptions, index uint32) {

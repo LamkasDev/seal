@@ -13,18 +13,15 @@ type VulkanPipelineLayout struct {
 }
 
 func NewVulkanPipelineLayout(device *logical.VulkanLogicalDevice) (VulkanPipelineLayout, error) {
-	var err error
 	pipelineLayout := VulkanPipelineLayout{
-		Device: device,
-	}
-
-	if pipelineLayout.Options, err = NewVulkanPipelineLayoutOptions(); err != nil {
-		return pipelineLayout, err
+		Device:  device,
+		Options: NewVulkanPipelineLayoutOptions(),
 	}
 
 	var vulkanPipelineLayout vulkan.PipelineLayout
 	if res := vulkan.CreatePipelineLayout(device.Handle, &pipelineLayout.Options.CreateInfo, nil, &vulkanPipelineLayout); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return pipelineLayout, vulkan.Error(res)
 	}
 	pipelineLayout.Handle = vulkanPipelineLayout
 	logger.DefaultLogger.Debug("created new vulkan pipeline layout")

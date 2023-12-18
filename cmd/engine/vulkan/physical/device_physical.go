@@ -3,26 +3,30 @@ package physical
 import (
 	"slices"
 
+	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanPhysicalDevice struct {
 	Handle       vulkan.PhysicalDevice
+	Window       *window.Window
+	Surface      *vulkan.Surface
 	Capabilities VulkanPhysicalDeviceCapabilities
 	Properties   vulkan.PhysicalDeviceProperties
 	Features     vulkan.PhysicalDeviceFeatures
 }
 
-func NewVulkanPhysicalDevice(handle vulkan.PhysicalDevice, window *glfw.Window, surface *vulkan.Surface) (VulkanPhysicalDevice, error) {
+func NewVulkanPhysicalDevice(handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) (VulkanPhysicalDevice, error) {
 	var err error
 	device := VulkanPhysicalDevice{
-		Handle: handle,
+		Handle:  handle,
+		Window:  cwindow,
+		Surface: surface,
 	}
 
-	if device.Capabilities, err = NewVulkanPhysicalDeviceCapabilities(handle, window, surface); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
+	if device.Capabilities, err = NewVulkanPhysicalDeviceCapabilities(handle, cwindow, surface); err != nil {
+		return device, err
 	}
 	logger.DefaultLogger.Debug("created new vulkan physical device capabilities")
 
@@ -32,6 +36,10 @@ func NewVulkanPhysicalDevice(handle vulkan.PhysicalDevice, window *glfw.Window, 
 	device.Features.Deref()
 
 	return device, nil
+}
+
+func UpdateVulkanPhysicalDevice(device *VulkanPhysicalDevice) error {
+	return UpdateVulkanPhysicalDeviceCapabilities(&device.Capabilities, device.Handle, device.Window, device.Surface)
 }
 
 func CompareVulkanPhysicalDevice(device *VulkanPhysicalDevice) int {

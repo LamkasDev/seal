@@ -14,19 +14,16 @@ type VulkanLogicalDevice struct {
 }
 
 func NewVulkanLogicalDevice(physicalDevice *physical.VulkanPhysicalDevice) (VulkanLogicalDevice, error) {
-	var err error
 	device := VulkanLogicalDevice{
 		Physical: physicalDevice,
+		Options:  NewVulkanLogicalDeviceOptions(physicalDevice),
 		Queues:   map[uint32]vulkan.Queue{},
-	}
-
-	if device.Options, err = NewVulkanLogicalDeviceOptions(physicalDevice); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
 	}
 
 	var vulkanDevice vulkan.Device
 	if res := vulkan.CreateDevice(physicalDevice.Handle, &device.Options.CreateInfo, nil, &vulkanDevice); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return device, vulkan.Error(res)
 	}
 	device.Handle = vulkanDevice
 	logger.DefaultLogger.Debug("created new vulkan logical device")

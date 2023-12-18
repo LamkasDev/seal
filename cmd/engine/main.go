@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/exec"
+	"runtime"
 	"runtime/pprof"
 
 	"github.com/LamkasDev/seal/cmd/common/arch"
@@ -14,6 +15,10 @@ import (
 )
 
 func main() {
+	if arch.SealDebug {
+		runtime.MemProfileRate = 1
+	}
+
 	// Initialize libraries
 	if err := logger.StartLogger(); err != nil {
 		panic(err)
@@ -34,20 +39,53 @@ func main() {
 
 	// Start profiling
 	if arch.SealDebug {
-		profileFile, err := os.Create("../cpu.prof")
+		cpuProfileFile, err := os.Create("../cpu.prof")
 		if err != nil {
 			logger.DefaultLogger.DPanic(err)
 		}
-		imageFile, err := os.Create("../cpu.svg")
+		cpuImageFile, err := os.Create("../cpu.svg")
 		if err != nil {
 			logger.DefaultLogger.DPanic(err)
 		}
-		pprof.StartCPUProfile(profileFile)
+		if err = pprof.StartCPUProfile(cpuProfileFile); err != nil {
+			logger.DefaultLogger.DPanic(err)
+		}
+
+		memProfileFile, err := os.Create("../mem.prof")
+		if err != nil {
+			logger.DefaultLogger.DPanic(err)
+		}
+		memImageFile, err := os.Create("../mem.svg")
+		if err != nil {
+			logger.DefaultLogger.DPanic(err)
+		}
+
 		defer func() {
 			pprof.StopCPUProfile()
 			cmd := exec.Command("go", "tool", "pprof", "-svg", "seal_engine.exe", "../cpu.prof")
-			cmd.Stdout = imageFile
+			cmd.Stdout = cpuImageFile
 			if err := cmd.Run(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+			if err := cpuProfileFile.Close(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+			if err := cpuImageFile.Close(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+
+			if err := pprof.WriteHeapProfile(memProfileFile); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+			cmd = exec.Command("go", "tool", "pprof", "-svg", "seal_engine.exe", "../mem.prof")
+			cmd.Stdout = memImageFile
+			if err := cmd.Run(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+			if err := memProfileFile.Close(); err != nil {
+				logger.DefaultLogger.DPanic(err)
+			}
+			if err := memImageFile.Close(); err != nil {
 				logger.DefaultLogger.DPanic(err)
 			}
 		}()

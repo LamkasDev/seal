@@ -12,19 +12,16 @@ type VulkanCommandPool struct {
 	Options VulkanCommandPoolOptions
 }
 
-func NewVulkanCommandPool(device *logical.VulkanLogicalDevice, family uint32) (VulkanCommandPool, error) {
-	var err error
+func NewVulkanCommandPool(device *logical.VulkanLogicalDevice, queueFamilyIndex uint32) (VulkanCommandPool, error) {
 	commandPool := VulkanCommandPool{
-		Device: device,
-	}
-
-	if commandPool.Options, err = NewVulkanCommandPoolOptions(family); err != nil {
-		logger.DefaultLogger.Panic(err.Error())
+		Device:  device,
+		Options: NewVulkanCommandPoolOptions(queueFamilyIndex),
 	}
 
 	var vulkanCommandPool vulkan.CommandPool
 	if res := vulkan.CreateCommandPool(device.Handle, &commandPool.Options.CreateInfo, nil, &vulkanCommandPool); res != vulkan.Success {
-		logger.DefaultLogger.Errorf("vulkan error: %d", int32(res))
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return commandPool, vulkan.Error(res)
 	}
 	commandPool.Handle = vulkanCommandPool
 	logger.DefaultLogger.Debug("created new vulkan command pool")

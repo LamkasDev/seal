@@ -21,7 +21,7 @@ type VulkanPipelineOptions struct {
 	CreateInfo                vulkan.GraphicsPipelineCreateInfo
 }
 
-func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) (VulkanPipelineOptions, error) {
+func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) VulkanPipelineOptions {
 	options := VulkanPipelineOptions{
 		DynamicState: vulkan.PipelineDynamicStateCreateInfo{
 			SType:             vulkan.StructureTypePipelineDynamicStateCreateInfo,
@@ -96,5 +96,5 @@ func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *vie
 		Subpass:             0,
 	}
 
-	return options, nil
+	return options
 }
