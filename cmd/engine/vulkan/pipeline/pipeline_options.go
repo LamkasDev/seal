@@ -4,6 +4,7 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/vulkan-go/vulkan"
 	"golang.org/x/exp/maps"
@@ -11,7 +12,7 @@ import (
 
 type VulkanPipelineOptions struct {
 	DynamicState              vulkan.PipelineDynamicStateCreateInfo
-	VertexInputState          vulkan.PipelineVertexInputStateCreateInfo
+	VertexInputStateOptions   vertex.VulkanVertexInputStateOptions
 	InputAssemblyState        vulkan.PipelineInputAssemblyStateCreateInfo
 	ViewportState             vulkan.PipelineViewportStateCreateInfo
 	RasterizationState        vulkan.PipelineRasterizationStateCreateInfo
@@ -28,11 +29,7 @@ func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *vie
 			DynamicStateCount: 2,
 			PDynamicStates:    []vulkan.DynamicState{vulkan.DynamicStateViewport, vulkan.DynamicStateScissor},
 		},
-		VertexInputState: vulkan.PipelineVertexInputStateCreateInfo{
-			SType:                           vulkan.StructureTypePipelineVertexInputStateCreateInfo,
-			VertexBindingDescriptionCount:   0,
-			VertexAttributeDescriptionCount: 0,
-		},
+		VertexInputStateOptions: vertex.NewVertexInputStateOptions(),
 		InputAssemblyState: vulkan.PipelineInputAssemblyStateCreateInfo{
 			SType:                  vulkan.StructureTypePipelineInputAssemblyStateCreateInfo,
 			Topology:               vulkan.PrimitiveTopologyTriangleList,
@@ -84,7 +81,7 @@ func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *vie
 		SType:               vulkan.StructureTypeGraphicsPipelineCreateInfo,
 		StageCount:          uint32(stagesCount),
 		PStages:             stages,
-		PVertexInputState:   &options.VertexInputState,
+		PVertexInputState:   &options.VertexInputStateOptions.CreateInfo,
 		PInputAssemblyState: &options.InputAssemblyState,
 		PDynamicState:       &options.DynamicState,
 		PViewportState:      &options.ViewportState,

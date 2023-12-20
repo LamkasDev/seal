@@ -1,6 +1,7 @@
-package command
+package buffer
 
 import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/command"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -8,7 +9,7 @@ type VulkanCommandBufferOptions struct {
 	AllocateInfo vulkan.CommandBufferAllocateInfo
 }
 
-func NewVulkanCommandBufferOptions(pool *VulkanCommandPool) VulkanCommandBufferOptions {
+func NewVulkanCommandBufferOptions(pool *command.VulkanCommandPool) VulkanCommandBufferOptions {
 	options := VulkanCommandBufferOptions{
 		AllocateInfo: vulkan.CommandBufferAllocateInfo{
 			SType:              vulkan.StructureTypeCommandBufferAllocateInfo,

@@ -1,6 +1,8 @@
 package physical
 
 import (
+	"errors"
+
 	"github.com/LamkasDev/seal/cmd/common/ctool"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
@@ -13,6 +15,7 @@ type VulkanPhysicalDeviceCapabilities struct {
 	ExtensionNames []string
 	Queue          VulkanPhysicalDeviceQueueCapabilities
 	Surface        VulkanPhysicalDeviceSurfaceCapabilities
+	Memory         VulkanPhysicalDeviceMemoryCapabilities
 }
 
 type VulkanPhysicalDeviceQueueCapabilities struct {
@@ -29,6 +32,10 @@ type VulkanPhysicalDeviceSurfaceCapabilities struct {
 	PresentModeIndex int
 	ImageExtent      vulkan.Extent2D
 	ImageCount       uint32
+}
+
+type VulkanPhysicalDeviceMemoryCapabilities struct {
+	Properties vulkan.PhysicalDeviceMemoryProperties
 }
 
 func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) (VulkanPhysicalDeviceCapabilities, error) {
@@ -121,6 +128,10 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *
 		capabilities.Surface.ImageCount = capabilities.Surface.Capabilities.MaxImageCount
 	}
 
+	// Create memory capabilities
+	vulkan.GetPhysicalDeviceMemoryProperties(handle, &capabilities.Memory.Properties)
+	capabilities.Memory.Properties.Deref()
+
 	return capabilities, nil
 }
 
@@ -141,4 +152,14 @@ func UpdateVulkanPhysicalDeviceCapabilities(capabilities *VulkanPhysicalDeviceCa
 	}
 
 	return nil
+}
+
+func GetVulkanPhysicalDeviceMemoryTypeIndex(capabilities *VulkanPhysicalDeviceCapabilities, filter uint32, flags vulkan.MemoryPropertyFlags) (uint32, error) {
+	for i := uint32(0); i < capabilities.Memory.Properties.MemoryTypeCount; i++ {
+		if filter&(1<<i) == (1<<i) && capabilities.Memory.Properties.MemoryTypes[i].PropertyFlags&flags == flags {
+			return i, nil
+		}
+	}
+
+	return 0, errors.New("failed to find memory type")
 }

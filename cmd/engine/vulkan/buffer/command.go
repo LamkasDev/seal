@@ -1,6 +1,7 @@
-package command
+package buffer
 
 import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/command"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
@@ -9,11 +10,11 @@ import (
 type VulkanCommandBuffer struct {
 	Handle  vulkan.CommandBuffer
 	Device  *logical.VulkanLogicalDevice
-	Pool    *VulkanCommandPool
+	Pool    *command.VulkanCommandPool
 	Options VulkanCommandBufferOptions
 }
 
-func NewVulkanCommandBuffer(device *logical.VulkanLogicalDevice, pool *VulkanCommandPool) (VulkanCommandBuffer, error) {
+func NewVulkanCommandBuffer(device *logical.VulkanLogicalDevice, pool *command.VulkanCommandPool) (VulkanCommandBuffer, error) {
 	commandBuffer := VulkanCommandBuffer{
 		Device:  device,
 		Pool:    pool,

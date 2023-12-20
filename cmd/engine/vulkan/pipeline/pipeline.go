@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/command"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/fence"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
@@ -25,7 +26,7 @@ type VulkanPipeline struct {
 	Layout                   layout.VulkanPipelineLayout
 	RenderPass               pass.VulkanRenderPass
 	CommandPool              command.VulkanCommandPool
-	CommandBuffers           []command.VulkanCommandBuffer
+	CommandBuffers           []buffer.VulkanCommandBuffer
 	ImageAvailableSemaphores []semaphore.VulkanSemaphore
 	RenderFinishedSemaphores []semaphore.VulkanSemaphore
 	InFlightFences           []fence.VulkanFence
@@ -40,7 +41,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 		Container:                container,
 		Window:                   cwindow,
 		Viewport:                 viewport.NewVulkanViewport(window.GetWindowImageExtent(cwindow)),
-		CommandBuffers:           make([]command.VulkanCommandBuffer, MaxFramesInFlight),
+		CommandBuffers:           make([]buffer.VulkanCommandBuffer, MaxFramesInFlight),
 		ImageAvailableSemaphores: make([]semaphore.VulkanSemaphore, MaxFramesInFlight),
 		RenderFinishedSemaphores: make([]semaphore.VulkanSemaphore, MaxFramesInFlight),
 		InFlightFences:           make([]fence.VulkanFence, MaxFramesInFlight),
@@ -56,7 +57,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 		return pipeline, err
 	}
 	for i := 0; i < MaxFramesInFlight; i++ {
-		if pipeline.CommandBuffers[i], err = command.NewVulkanCommandBuffer(device, &pipeline.CommandPool); err != nil {
+		if pipeline.CommandBuffers[i], err = buffer.NewVulkanCommandBuffer(device, &pipeline.CommandPool); err != nil {
 			return pipeline, err
 		}
 		if pipeline.ImageAvailableSemaphores[i], err = semaphore.NewVulkanSemaphore(device); err != nil {
@@ -98,7 +99,7 @@ func FreeVulkanPipeline(pipeline *VulkanPipeline) error {
 		if err := semaphore.FreeVulkanSemaphore(&pipeline.ImageAvailableSemaphores[i]); err != nil {
 			return err
 		}
-		if err := command.FreeVulkanCommandBuffer(&pipeline.CommandBuffers[i]); err != nil {
+		if err := buffer.FreeVulkanCommandBuffer(&pipeline.CommandBuffers[i]); err != nil {
 			return err
 		}
 	}

@@ -6,6 +6,10 @@ github.com/AllenDang/imgui-go v1.12.1-0.20221124025851-59b862ca5a0c h1:kiXjH0n0K
 github.com/AllenDang/imgui-go v1.12.1-0.20221124025851-59b862ca5a0c/go.mod h1:kuPs9RWleaUuK7D49bE6HPxyRA36Lp4ICKGp+5OnnbY=
 github.com/CannibalVox/cgoparam v1.1.0 h1:6UDDhOpT06csFE2vkcanXsIJmebMc9o+6Vzhvi4i0wY=
 github.com/CannibalVox/cgoparam v1.1.0/go.mod h1:9LDFLuHVgE+IIBDd1QFN3dPqmGQN9bS6H+NPizMv2fA=
+github.com/EngoEngine/glm v0.0.0-20170725114841-9c08f4d1f668 h1:Xz9xCyj4YTFam6pmzdwV8/pyQeYJEpA5ke91z0ovtHs=
+github.com/EngoEngine/glm v0.0.0-20170725114841-9c08f4d1f668/go.mod h1:PXaHlwWG1hTf+tp8q8AsJDgZ0epvvPeUw/wcfKu869Y=
+github.com/EngoEngine/math v1.0.4 h1:ejDfSg48ynB9T6btiu9EHjZmpQgW/zHf3IeC7SqXXv8=
+github.com/EngoEngine/math v1.0.4/go.mod h1:d8SnfwiaImse0lB3JuR91B2CShZmMxaTWaWZ/ZxDxAU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
