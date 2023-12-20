@@ -6,7 +6,6 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
-	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
@@ -39,9 +38,7 @@ func RunEngine(engine *Engine) error {
 	deltaUpdate, deltaFrame := float64(0), float64(0)
 	targetUpdate, targetFrame := float64(1000/ups), float64(1000/fps)
 
-	for !engine.Renderer.Window.Handle.ShouldClose() {
-		glfw.PollEvents()
-
+	for true {
 		now := time.Now().UnixMilli()
 		diff := float64(now - last)
 		deltaUpdate += diff / targetUpdate
@@ -55,10 +52,11 @@ func RunEngine(engine *Engine) error {
 			deltaUpdate--
 		}
 		if deltaFrame > 1 {
-			if err := renderer.RunRenderer(&engine.Renderer); err != nil {
-				return err
+			glfw.PollEvents()
+			if engine.Renderer.Window.Handle.ShouldClose() {
+				break
 			}
-			if err := window.RunWindow(&engine.Renderer.Window); err != nil {
+			if err := renderer.RunRenderer(&engine.Renderer); err != nil {
 				return err
 			}
 			_ = now - lastFrame

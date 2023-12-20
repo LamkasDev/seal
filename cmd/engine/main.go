@@ -14,6 +14,10 @@ import (
 	"github.com/LamkasDev/seal/cmd/logger"
 )
 
+func init() {
+	runtime.LockOSThread()
+}
+
 func main() {
 	if arch.SealDebug {
 		runtime.MemProfileRate = 1

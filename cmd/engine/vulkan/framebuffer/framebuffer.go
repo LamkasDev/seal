@@ -3,7 +3,7 @@ package framebuffer
 import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/image"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
+	sealPass "github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
@@ -11,15 +11,17 @@ import (
 type VulkanFramebuffer struct {
 	Handle    vulkan.Framebuffer
 	Device    *logical.VulkanLogicalDevice
+	Pass      *sealPass.VulkanRenderPass
 	Imageview *image.VulkanImageView
 	Options   VulkanFramebufferOptions
 }
 
-func NewVulkanFramebuffer(device *logical.VulkanLogicalDevice, pass *pass.VulkanRenderPass, imageview *image.VulkanImageView, extent vulkan.Extent2D) (VulkanFramebuffer, error) {
+func NewVulkanFramebuffer(device *logical.VulkanLogicalDevice, pass *sealPass.VulkanRenderPass, imageview *image.VulkanImageView) (VulkanFramebuffer, error) {
 	framebuffer := VulkanFramebuffer{
 		Device:    device,
+		Pass:      pass,
 		Imageview: imageview,
-		Options:   NewVulkanFramebufferOptions(pass, imageview, extent),
+		Options:   NewVulkanFramebufferOptions(device, pass, imageview),
 	}
 
 	var vulkanFramebuffer vulkan.Framebuffer

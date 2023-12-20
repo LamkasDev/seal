@@ -38,8 +38,8 @@ func NewVulkanPhysicalDevice(handle vulkan.PhysicalDevice, cwindow *window.Windo
 	return device, nil
 }
 
-func UpdateVulkanPhysicalDevice(device *VulkanPhysicalDevice) error {
-	return UpdateVulkanPhysicalDeviceCapabilities(&device.Capabilities, device.Handle, device.Window, device.Surface)
+func ResizeVulkanPhysicalDevice(device *VulkanPhysicalDevice) error {
+	return ResizeVulkanPhysicalDeviceCapabilities(&device.Capabilities, device.Handle, device.Window, device.Surface)
 }
 
 func CompareVulkanPhysicalDevice(device *VulkanPhysicalDevice) int {

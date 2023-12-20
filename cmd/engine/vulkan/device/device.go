@@ -57,9 +57,9 @@ func NewVulkanInstanceDevices(instance vulkan.Instance, cwindow *window.Window, 
 	return devices, nil
 }
 
-func UpdateVulkanInstanceDevices(devices *VulkanInstanceDevices) error {
+func ResizeVulkanInstanceDevices(devices *VulkanInstanceDevices) error {
 	for i := 0; i < len(devices.PhysicalDevices); i++ {
-		if err := physical.UpdateVulkanPhysicalDevice(&devices.PhysicalDevices[i]); err != nil {
+		if err := physical.ResizeVulkanPhysicalDevice(&devices.PhysicalDevices[i]); err != nil {
 			return err
 		}
 	}

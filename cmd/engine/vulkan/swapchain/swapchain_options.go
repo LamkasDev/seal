@@ -2,7 +2,6 @@ package swapchain
 
 import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
-	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -18,7 +17,7 @@ func NewVulkanSwapchainOptions(pipeline *pipeline.VulkanPipeline, surface *vulka
 		MinImageCount:    pipeline.Device.Physical.Capabilities.Surface.ImageCount,
 		ImageFormat:      pipeline.Device.Physical.Capabilities.Surface.ImageFormats[pipeline.Device.Physical.Capabilities.Surface.ImageFormatIndex].Format,
 		ImageColorSpace:  pipeline.Device.Physical.Capabilities.Surface.ImageFormats[pipeline.Device.Physical.Capabilities.Surface.ImageFormatIndex].ColorSpace,
-		ImageExtent:      window.GetWindowImageExtent(pipeline.Window),
+		ImageExtent:      pipeline.Window.Data.Extent,
 		ImageArrayLayers: 1,
 		ImageUsage:       vulkan.ImageUsageFlags(vulkan.ImageUsageColorAttachmentBit),
 		PreTransform:     pipeline.Device.Physical.Capabilities.Surface.Capabilities.CurrentTransform,

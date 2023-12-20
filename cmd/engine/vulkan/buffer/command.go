@@ -32,6 +32,32 @@ func NewVulkanCommandBuffer(device *logical.VulkanLogicalDevice, pool *command.V
 	return commandBuffer, nil
 }
 
+func BeginVulkanCommandBuffer(buffer *VulkanCommandBuffer) error {
+	if res := vulkan.ResetCommandBuffer(buffer.Handle, 0); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return vulkan.Error(res)
+	}
+	beginInfo := vulkan.CommandBufferBeginInfo{
+		SType: vulkan.StructureTypeCommandBufferBeginInfo,
+		Flags: vulkan.CommandBufferUsageFlags(vulkan.CommandBufferUsageOneTimeSubmitBit),
+	}
+	if res := vulkan.BeginCommandBuffer(buffer.Handle, &beginInfo); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return vulkan.Error(res)
+	}
+
+	return nil
+}
+
+func EndVulkanCommandBuffer(buffer *VulkanCommandBuffer) error {
+	if res := vulkan.EndCommandBuffer(buffer.Handle); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return vulkan.Error(res)
+	}
+
+	return nil
+}
+
 func FreeVulkanCommandBuffer(buffer *VulkanCommandBuffer) error {
 	vulkan.FreeCommandBuffers(buffer.Device.Handle, buffer.Pool.Handle, 1, []vulkan.CommandBuffer{buffer.Handle})
 	return nil

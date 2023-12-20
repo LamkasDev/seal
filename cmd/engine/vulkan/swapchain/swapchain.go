@@ -45,7 +45,7 @@ func NewVulkanSwapchain(pipeline *pipeline.VulkanPipeline, surface *vulkan.Surfa
 		if err != nil {
 			return swapchain, err
 		}
-		framebuffer, err := sealFramebuffer.NewVulkanFramebuffer(pipeline.Device, &swapchain.Pipeline.RenderPass, &imageview, swapchain.Options.CreateInfo.ImageExtent)
+		framebuffer, err := sealFramebuffer.NewVulkanFramebuffer(pipeline.Device, &swapchain.Pipeline.RenderPass, &imageview)
 		if err != nil {
 			return swapchain, err
 		}

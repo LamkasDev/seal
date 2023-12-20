@@ -3,10 +3,12 @@ package renderer
 import (
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	sealVulkan "github.com/LamkasDev/seal/cmd/engine/vulkan"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/swapchain"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
@@ -67,15 +69,15 @@ func NewRenderer() (Renderer, error) {
 	return renderer, nil
 }
 
-func UpdateVulkanRenderer(renderer *Renderer) error {
+func ResizeVulkanRenderer(renderer *Renderer) error {
 	var err error
 	if err = swapchain.FreeVulkanSwapchain(&renderer.Swapchain); err != nil {
 		return err
 	}
-	if err = device.UpdateVulkanInstanceDevices(&renderer.VulkanInstance.Devices); err != nil {
+	if err = device.ResizeVulkanInstanceDevices(&renderer.VulkanInstance.Devices); err != nil {
 		return err
 	}
-	if err = pipeline.UpdateVulkanPipeline(&renderer.Pipeline); err != nil {
+	if err = pipeline.ResizeVulkanPipeline(&renderer.Pipeline); err != nil {
 		return err
 	}
 	renderer.Swapchain, err = swapchain.NewVulkanSwapchain(&renderer.Pipeline, &renderer.Surface, nil)
@@ -88,10 +90,10 @@ func UpdateVulkanRenderer(renderer *Renderer) error {
 
 func AcquireNextImageRenderer(renderer *Renderer) (uint32, error) {
 	var imageIndex uint32
-	if res := vulkan.AcquireNextImage(renderer.Pipeline.Device.Handle, renderer.Swapchain.Handle, vulkan.MaxUint64, renderer.Pipeline.ImageAvailableSemaphores[renderer.Pipeline.CurrentFrame].Handle, nil, &imageIndex); res != vulkan.Success && res != vulkan.Suboptimal {
+	if res := vulkan.AcquireNextImage(renderer.Pipeline.Device.Handle, renderer.Swapchain.Handle, vulkan.MaxUint64, renderer.Pipeline.Syncer.ImageAvailableSemaphores[renderer.Pipeline.CurrentFrame].Handle, nil, &imageIndex); res != vulkan.Success && res != vulkan.Suboptimal {
 		switch res {
 		case vulkan.ErrorOutOfDate:
-			if err := UpdateVulkanRenderer(renderer); err != nil {
+			if err := ResizeVulkanRenderer(renderer); err != nil {
 				return vulkan.MaxUint32, err
 			}
 			return AcquireNextImageRenderer(renderer)
@@ -103,30 +105,17 @@ func AcquireNextImageRenderer(renderer *Renderer) (uint32, error) {
 	return imageIndex, nil
 }
 
-func QueuePresentRenderer(renderer *Renderer, presentInfo vulkan.PresentInfo) error {
-	if res := vulkan.QueuePresent(renderer.Pipeline.Device.Queues[uint32(renderer.Pipeline.Device.Physical.Capabilities.Queue.PresentationIndex)], &presentInfo); res != vulkan.Success {
-		switch res {
-		case vulkan.ErrorOutOfDate:
-		case vulkan.Suboptimal:
-			if err := UpdateVulkanRenderer(renderer); err != nil {
-				return err
-			}
-			return nil
-		default:
-			return vulkan.Error(res)
-		}
+func RunRenderer(renderer *Renderer) error {
+	if renderer.Window.Data.Extent.Width == 0 || renderer.Window.Data.Extent.Height == 0 {
+		return nil
 	}
 
-	return nil
-}
-
-func RunRenderer(renderer *Renderer) error {
 	var err error
-	if res := vulkan.WaitForFences(renderer.Pipeline.Device.Handle, 1, []vulkan.Fence{renderer.Pipeline.InFlightFences[renderer.Pipeline.CurrentFrame].Handle}, vulkan.Bool32(1), vulkan.MaxUint64); res != vulkan.Success {
+	if res := vulkan.WaitForFences(renderer.Pipeline.Device.Handle, 1, []vulkan.Fence{renderer.Pipeline.Syncer.InFlightFences[renderer.Pipeline.CurrentFrame].Handle}, vulkan.Bool32(1), vulkan.MaxUint64); res != vulkan.Success {
 		logger.DefaultLogger.Error(vulkan.Error(res))
 		return vulkan.Error(res)
 	}
-	if res := vulkan.ResetFences(renderer.Pipeline.Device.Handle, 1, []vulkan.Fence{renderer.Pipeline.InFlightFences[renderer.Pipeline.CurrentFrame].Handle}); res != vulkan.Success {
+	if res := vulkan.ResetFences(renderer.Pipeline.Device.Handle, 1, []vulkan.Fence{renderer.Pipeline.Syncer.InFlightFences[renderer.Pipeline.CurrentFrame].Handle}); res != vulkan.Success {
 		logger.DefaultLogger.Error(vulkan.Error(res))
 		return vulkan.Error(res)
 	}
@@ -137,32 +126,17 @@ func RunRenderer(renderer *Renderer) error {
 		return err
 	}
 
-	if res := vulkan.ResetCommandBuffer(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, 0); res != vulkan.Success {
-		logger.DefaultLogger.Error(vulkan.Error(res))
-		return vulkan.Error(res)
+	commandBuffer := renderer.Pipeline.Commander.CommandBuffers[renderer.Pipeline.CurrentFrame]
+	if err := buffer.BeginVulkanCommandBuffer(&commandBuffer); err != nil {
+		return err
 	}
-	commandBufferBeginInfo := vulkan.CommandBufferBeginInfo{
-		SType: vulkan.StructureTypeCommandBufferBeginInfo,
-		Flags: vulkan.CommandBufferUsageFlags(vulkan.CommandBufferUsageOneTimeSubmitBit),
+
+	if err := BeginVulkanRenderPass(renderer, imageIndex); err != nil {
+		return err
 	}
-	if res := vulkan.BeginCommandBuffer(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, &commandBufferBeginInfo); res != vulkan.Success {
-		logger.DefaultLogger.Error(vulkan.Error(res))
-		return vulkan.Error(res)
-	}
-	renderPassBeginInfo := vulkan.RenderPassBeginInfo{
-		SType:       vulkan.StructureTypeRenderPassBeginInfo,
-		RenderPass:  renderer.Pipeline.RenderPass.Handle,
-		Framebuffer: renderer.Swapchain.Framebuffers[imageIndex].Handle,
-		RenderArea: vulkan.Rect2D{
-			Offset: vulkan.Offset2D{X: 0, Y: 0},
-			Extent: renderer.Swapchain.Options.CreateInfo.ImageExtent,
-		},
-		ClearValueCount: 1,
-		PClearValues:    []vulkan.ClearValue{{0, 0, 0, 1}},
-	}
-	vulkan.CmdBeginRenderPass(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, &renderPassBeginInfo, vulkan.SubpassContentsInline)
-	vulkan.CmdBindPipeline(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, vulkan.PipelineBindPointGraphics, renderer.Pipeline.Handle)
-	vulkan.CmdSetViewport(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, 0, 1, []vulkan.Viewport{
+	vulkan.CmdBindVertexBuffers(commandBuffer.Handle, 0, 1, []vulkan.Buffer{renderer.Pipeline.VertexBuffer.DeviceBuffer.Handle}, []vulkan.DeviceSize{0})
+	vulkan.CmdBindPipeline(commandBuffer.Handle, vulkan.PipelineBindPointGraphics, renderer.Pipeline.Handle)
+	vulkan.CmdSetViewport(commandBuffer.Handle, 0, 1, []vulkan.Viewport{
 		{
 			X:        0,
 			Y:        0,
@@ -172,39 +146,17 @@ func RunRenderer(renderer *Renderer) error {
 			MaxDepth: 0,
 		},
 	})
-	vulkan.CmdSetScissor(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, 0, 1, []vulkan.Rect2D{{Offset: vulkan.Offset2D{X: 0, Y: 0}, Extent: renderer.Swapchain.Options.CreateInfo.ImageExtent}})
-	vulkan.CmdDraw(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle, 3, 1, 0, 0)
-	vulkan.CmdEndRenderPass(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle)
-	if res := vulkan.EndCommandBuffer(renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle); res != vulkan.Success {
-		logger.DefaultLogger.Error(vulkan.Error(res))
-		return vulkan.Error(res)
+	vulkan.CmdSetScissor(commandBuffer.Handle, 0, 1, []vulkan.Rect2D{{Offset: vulkan.Offset2D{X: 0, Y: 0}, Extent: renderer.Swapchain.Options.CreateInfo.ImageExtent}})
+	vulkan.CmdDraw(commandBuffer.Handle, uint32(len(vertex.DefaultVertices)), 1, 0, 0)
+	vulkan.CmdEndRenderPass(commandBuffer.Handle)
+	if err := buffer.EndVulkanCommandBuffer(&commandBuffer); err != nil {
+		return err
 	}
 
-	submitInfo := vulkan.SubmitInfo{
-		SType:                vulkan.StructureTypeSubmitInfo,
-		WaitSemaphoreCount:   1,
-		PWaitSemaphores:      []vulkan.Semaphore{renderer.Pipeline.ImageAvailableSemaphores[renderer.Pipeline.CurrentFrame].Handle},
-		PWaitDstStageMask:    []vulkan.PipelineStageFlags{vulkan.PipelineStageFlags(vulkan.PipelineStageColorAttachmentOutputBit)},
-		CommandBufferCount:   1,
-		PCommandBuffers:      []vulkan.CommandBuffer{renderer.Pipeline.CommandBuffers[renderer.Pipeline.CurrentFrame].Handle},
-		SignalSemaphoreCount: 1,
-		PSignalSemaphores:    []vulkan.Semaphore{renderer.Pipeline.RenderFinishedSemaphores[renderer.Pipeline.CurrentFrame].Handle},
+	if err := QueueSubmitVulkanRenderer(renderer); err != nil {
+		return err
 	}
-	if res := vulkan.QueueSubmit(renderer.Pipeline.Device.Queues[uint32(renderer.Pipeline.Device.Physical.Capabilities.Queue.GraphicsIndex)], 1, []vulkan.SubmitInfo{submitInfo}, renderer.Pipeline.InFlightFences[renderer.Pipeline.CurrentFrame].Handle); res != vulkan.Success {
-		logger.DefaultLogger.Error(vulkan.Error(res))
-		return vulkan.Error(res)
-	}
-
-	presentInfo := vulkan.PresentInfo{
-		SType:              vulkan.StructureTypePresentInfo,
-		WaitSemaphoreCount: 1,
-		PWaitSemaphores:    []vulkan.Semaphore{renderer.Pipeline.RenderFinishedSemaphores[renderer.Pipeline.CurrentFrame].Handle},
-		SwapchainCount:     1,
-		PSwapchains:        []vulkan.Swapchain{renderer.Swapchain.Handle},
-		PImageIndices:      []uint32{imageIndex},
-	}
-	if err = QueuePresentRenderer(renderer, presentInfo); err != nil {
-		logger.DefaultLogger.Error(err)
+	if err := QueuePresentRenderer(renderer, imageIndex); err != nil {
 		return err
 	}
 

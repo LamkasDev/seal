@@ -83,7 +83,7 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *
 	}
 
 	// Create surface capabilities
-	if err := UpdateVulkanPhysicalDeviceCapabilities(&capabilities, handle, cwindow, surface); err != nil {
+	if err := ResizeVulkanPhysicalDeviceCapabilities(&capabilities, handle, cwindow, surface); err != nil {
 		return capabilities, err
 	}
 
@@ -131,11 +131,14 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *
 	// Create memory capabilities
 	vulkan.GetPhysicalDeviceMemoryProperties(handle, &capabilities.Memory.Properties)
 	capabilities.Memory.Properties.Deref()
+	for i := uint32(0); i < capabilities.Memory.Properties.MemoryTypeCount; i++ {
+		capabilities.Memory.Properties.MemoryTypes[i].Deref()
+	}
 
 	return capabilities, nil
 }
 
-func UpdateVulkanPhysicalDeviceCapabilities(capabilities *VulkanPhysicalDeviceCapabilities, handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) error {
+func ResizeVulkanPhysicalDeviceCapabilities(capabilities *VulkanPhysicalDeviceCapabilities, handle vulkan.PhysicalDevice, cwindow *window.Window, surface *vulkan.Surface) error {
 	if res := vulkan.GetPhysicalDeviceSurfaceCapabilities(handle, *surface, &capabilities.Surface.Capabilities); res != vulkan.Success {
 		logger.DefaultLogger.Error(vulkan.Error(res))
 		return vulkan.Error(res)
@@ -161,5 +164,6 @@ func GetVulkanPhysicalDeviceMemoryTypeIndex(capabilities *VulkanPhysicalDeviceCa
 		}
 	}
 
+	logger.DefaultLogger.Errorf("failed to find memory type: %d / %d", filter, flags)
 	return 0, errors.New("failed to find memory type")
 }

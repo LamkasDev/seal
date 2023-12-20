@@ -1,17 +1,17 @@
 package window
 
 import (
-	"github.com/LamkasDev/seal/cmd/common"
+	"github.com/vulkan-go/vulkan"
 )
 
 type WindowOptions struct {
-	Title string
-	Size  common.Size
+	Title  string
+	Extent vulkan.Extent2D
 }
 
-func NewWindowOptions(title string, size common.Size) WindowOptions {
+func NewWindowOptions(title string, extent vulkan.Extent2D) WindowOptions {
 	return WindowOptions{
-		Title: title,
-		Size:  size,
+		Title:  title,
+		Extent: extent,
 	}
 }

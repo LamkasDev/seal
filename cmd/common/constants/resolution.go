@@ -1,5 +1,10 @@
 package constants
 
-import "github.com/LamkasDev/seal/cmd/common"
+import (
+	"github.com/vulkan-go/vulkan"
+)
 
-var DefaultResolution = common.NewSize(800, 600)
+var DefaultExtent = vulkan.Extent2D{
+	Width:  800,
+	Height: 600,
+}
