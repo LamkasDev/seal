@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/command"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
@@ -17,7 +18,7 @@ func NewVulkanPipelineCommander(device *logical.VulkanLogicalDevice) (VulkanPipe
 	var err error
 	commander := VulkanPipelineCommander{
 		Device:         device,
-		CommandBuffers: make([]buffer.VulkanCommandBuffer, MaxFramesInFlight),
+		CommandBuffers: make([]buffer.VulkanCommandBuffer, commonPipeline.MaxFramesInFlight),
 	}
 
 	if commander.Pool, err = command.NewVulkanCommandPool(device, uint32(device.Physical.Capabilities.Queue.GraphicsIndex)); err != nil {
@@ -26,7 +27,7 @@ func NewVulkanPipelineCommander(device *logical.VulkanLogicalDevice) (VulkanPipe
 	if commander.StagingBuffer, err = buffer.NewVulkanCommandBuffer(device, &commander.Pool); err != nil {
 		return commander, err
 	}
-	for i := 0; i < MaxFramesInFlight; i++ {
+	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
 		if commander.CommandBuffers[i], err = buffer.NewVulkanCommandBuffer(device, &commander.Pool); err != nil {
 			return commander, err
 		}
@@ -36,7 +37,7 @@ func NewVulkanPipelineCommander(device *logical.VulkanLogicalDevice) (VulkanPipe
 }
 
 func FreeVulkanPipelineCommander(commander *VulkanPipelineCommander) error {
-	for i := 0; i < MaxFramesInFlight; i++ {
+	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
 		if err := buffer.FreeVulkanCommandBuffer(&commander.CommandBuffers[i]); err != nil {
 			return err
 		}

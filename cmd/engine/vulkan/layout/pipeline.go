@@ -7,16 +7,22 @@ import (
 )
 
 type VulkanPipelineLayout struct {
-	Handle  vulkan.PipelineLayout
-	Device  *logical.VulkanLogicalDevice
-	Options VulkanPipelineLayoutOptions
+	Handle        vulkan.PipelineLayout
+	DescriptorSet VulkanDescriptorSetLayout
+	Device        *logical.VulkanLogicalDevice
+	Options       VulkanPipelineLayoutOptions
 }
 
 func NewVulkanPipelineLayout(device *logical.VulkanLogicalDevice) (VulkanPipelineLayout, error) {
+	var err error
 	pipelineLayout := VulkanPipelineLayout{
-		Device:  device,
-		Options: NewVulkanPipelineLayoutOptions(),
+		Device: device,
 	}
+
+	if pipelineLayout.DescriptorSet, err = NewVulkanDescriptorSetLayout(device); err != nil {
+		return pipelineLayout, err
+	}
+	pipelineLayout.Options = NewVulkanPipelineLayoutOptions(&pipelineLayout.DescriptorSet)
 
 	var vulkanPipelineLayout vulkan.PipelineLayout
 	if res := vulkan.CreatePipelineLayout(device.Handle, &pipelineLayout.Options.CreateInfo, nil, &vulkanPipelineLayout); res != vulkan.Success {
@@ -30,6 +36,10 @@ func NewVulkanPipelineLayout(device *logical.VulkanLogicalDevice) (VulkanPipelin
 }
 
 func FreeVulkanPipelineLayout(layout *VulkanPipelineLayout) error {
+	if err := FreeVulkanDescriptorSetLayout(&layout.DescriptorSet); err != nil {
+		return err
+	}
+
 	vulkan.DestroyPipelineLayout(layout.Device.Handle, layout.Handle, nil)
 	return nil
 }

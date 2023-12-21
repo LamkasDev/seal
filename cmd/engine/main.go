@@ -7,7 +7,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/LamkasDev/seal/cmd/common/arch"
-	"github.com/LamkasDev/seal/cmd/engine/engine"
+	sealEngine "github.com/LamkasDev/seal/cmd/engine/engine"
 	sealGLFW "github.com/LamkasDev/seal/cmd/engine/glfw"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	sealVulkan "github.com/LamkasDev/seal/cmd/engine/vulkan"
@@ -97,14 +97,15 @@ func main() {
 
 	// Setup engine
 	progress.AdvanceLoading()
-	sealEngine, err := engine.NewEngine()
+	var err error
+	sealEngine.EngineInstance, err = sealEngine.NewEngine()
 	if err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	defer engine.FreeEngine(&sealEngine)
+	defer sealEngine.FreeEngine(&sealEngine.EngineInstance)
 
 	// Run the main loop
-	if err := engine.RunEngine(&sealEngine); err != nil {
+	if err := sealEngine.RunEngine(&sealEngine.EngineInstance); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 }

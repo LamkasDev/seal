@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/fence"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/semaphore"
@@ -18,12 +19,12 @@ func NewVulkanPipelineSyncer(device *logical.VulkanLogicalDevice) (VulkanPipelin
 	var err error
 	syncer := VulkanPipelineSyncer{
 		Device:                   device,
-		ImageAvailableSemaphores: make([]semaphore.VulkanSemaphore, MaxFramesInFlight),
-		RenderFinishedSemaphores: make([]semaphore.VulkanSemaphore, MaxFramesInFlight),
-		InFlightFences:           make([]fence.VulkanFence, MaxFramesInFlight),
+		ImageAvailableSemaphores: make([]semaphore.VulkanSemaphore, commonPipeline.MaxFramesInFlight),
+		RenderFinishedSemaphores: make([]semaphore.VulkanSemaphore, commonPipeline.MaxFramesInFlight),
+		InFlightFences:           make([]fence.VulkanFence, commonPipeline.MaxFramesInFlight),
 	}
 
-	for i := 0; i < MaxFramesInFlight; i++ {
+	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
 		if syncer.ImageAvailableSemaphores[i], err = semaphore.NewVulkanSemaphore(device); err != nil {
 			return syncer, err
 		}
@@ -39,7 +40,7 @@ func NewVulkanPipelineSyncer(device *logical.VulkanLogicalDevice) (VulkanPipelin
 }
 
 func FreeVulkanPipelineSyncer(syncer *VulkanPipelineSyncer) error {
-	for i := 0; i < MaxFramesInFlight; i++ {
+	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
 		if err := fence.FreeVulkanFence(&syncer.InFlightFences[i]); err != nil {
 			return err
 		}

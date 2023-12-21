@@ -2,6 +2,7 @@ package logical
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/physical"
 	"github.com/vulkan-go/vulkan"
@@ -30,6 +31,12 @@ func NewVulkanLogicalDeviceOptions(device *physical.VulkanPhysicalDevice) Vulkan
 			fmt.Sprintf("%s\x00", vulkan.KhrSwapchainExtensionName),
 		},
 		PQueueCreateInfos: maps.Values(options.QueueCreateInfo),
+	}
+	if slices.ContainsFunc(device.Capabilities.ExtensionNames, func(s string) bool {
+		return s == "VK_EXT_memory_priority" || s == "VK_EXT_pageable_device_local_memory"
+	}) {
+		options.CreateInfo.PpEnabledExtensionNames = append(options.CreateInfo.PpEnabledExtensionNames, "VK_EXT_memory_priority\x00")
+		options.CreateInfo.PpEnabledExtensionNames = append(options.CreateInfo.PpEnabledExtensionNames, "VK_EXT_pageable_device_local_memory\x00")
 	}
 	options.CreateInfo.EnabledExtensionCount = uint32(len(options.CreateInfo.PpEnabledExtensionNames))
 	options.CreateInfo.QueueCreateInfoCount = uint32(len(options.CreateInfo.PQueueCreateInfos))

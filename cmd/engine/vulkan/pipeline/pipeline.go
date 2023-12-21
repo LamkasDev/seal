@@ -1,32 +1,37 @@
 package pipeline
 
 import (
+	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
-const MaxFramesInFlight = 2
-
 type VulkanPipeline struct {
-	Handle       vulkan.Pipeline
-	Device       *logical.VulkanLogicalDevice
-	Container    *shader.VulkanShaderContainer
-	Window       *window.Window
-	Viewport     viewport.VulkanViewport
-	Layout       layout.VulkanPipelineLayout
-	RenderPass   pass.VulkanRenderPass
-	Syncer       VulkanPipelineSyncer
-	Commander    VulkanPipelineCommander
-	VertexBuffer buffer.VulkanVertexBuffer
-	CurrentFrame uint32
-	Options      VulkanPipelineOptions
+	Handle     vulkan.Pipeline
+	Device     *logical.VulkanLogicalDevice
+	Container  *shader.VulkanShaderContainer
+	Window     *window.Window
+	Viewport   viewport.VulkanViewport
+	Layout     layout.VulkanPipelineLayout
+	RenderPass pass.VulkanRenderPass
+	Syncer     VulkanPipelineSyncer
+	Commander  VulkanPipelineCommander
+	Mesh       mesh.VulkanMesh
+	Options    VulkanPipelineOptions
+
+	ImageIndex    uint32
+	CommandBuffer *buffer.VulkanCommandBuffer
+	CurrentFrame  uint32
 }
 
 func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.VulkanShaderContainer, cwindow *window.Window) (VulkanPipeline, error) {
@@ -50,7 +55,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 	if pipeline.Commander, err = NewVulkanPipelineCommander(device); err != nil {
 		return pipeline, err
 	}
-	if pipeline.VertexBuffer, err = buffer.NewVulkanVertexBuffer(device); err != nil {
+	if pipeline.Mesh, err = mesh.NewVulkanMesh(device, buffer.NewVulkanMeshBufferOptions(vertex.DefaultVertices, vertex.DefaultVerticesIndex, uniform.NewVulkanUniform(cwindow.Data.Extent))); err != nil {
 		return pipeline, err
 	}
 	pipeline.Options = NewVulkanPipelineOptions(&pipeline.Layout, &pipeline.Viewport, &pipeline.RenderPass, container)
@@ -67,6 +72,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 	if err := PushVulkanPipelineBuffers(&pipeline); err != nil {
 		return pipeline, err
 	}
+	AdvanceVulkanPipelineFrame(&pipeline)
 
 	return pipeline, nil
 }
@@ -77,9 +83,9 @@ func PushVulkanPipelineBuffers(pipeline *VulkanPipeline) error {
 	}
 
 	bufferCopy := vulkan.BufferCopy{
-		Size: pipeline.VertexBuffer.StagingBuffer.Options.CreateInfo.Size,
+		Size: pipeline.Mesh.Buffer.StagingBuffer.Options.CreateInfo.Size,
 	}
-	vulkan.CmdCopyBuffer(pipeline.Commander.StagingBuffer.Handle, pipeline.VertexBuffer.StagingBuffer.Handle, pipeline.VertexBuffer.DeviceBuffer.Handle, 1, []vulkan.BufferCopy{bufferCopy})
+	vulkan.CmdCopyBuffer(pipeline.Commander.StagingBuffer.Handle, pipeline.Mesh.Buffer.StagingBuffer.Handle, pipeline.Mesh.Buffer.DeviceBuffer.Handle, 1, []vulkan.BufferCopy{bufferCopy})
 
 	if err := buffer.EndVulkanCommandBuffer(&pipeline.Commander.StagingBuffer); err != nil {
 		return err
@@ -107,8 +113,15 @@ func ResizeVulkanPipeline(pipeline *VulkanPipeline) error {
 	return nil
 }
 
+func AdvanceVulkanPipelineFrame(pipeline *VulkanPipeline) error {
+	pipeline.CurrentFrame = (pipeline.CurrentFrame + 1) % commonPipeline.MaxFramesInFlight
+	pipeline.CommandBuffer = &pipeline.Commander.CommandBuffers[pipeline.CurrentFrame]
+
+	return nil
+}
+
 func FreeVulkanPipeline(pipeline *VulkanPipeline) error {
-	if err := buffer.FreeVulkanVertexBuffer(&pipeline.VertexBuffer); err != nil {
+	if err := buffer.FreeVulkanMeshBuffer(&pipeline.Mesh.Buffer); err != nil {
 		return err
 	}
 	if err := FreeVulkanPipelineSyncer(&pipeline.Syncer); err != nil {

@@ -29,6 +29,15 @@ func NewVulkanCommandPool(device *logical.VulkanLogicalDevice, queueFamilyIndex 
 	return commandPool, nil
 }
 
+func ResetVulkanCommandPool(pool *VulkanCommandPool) error {
+	if res := vulkan.ResetCommandPool(pool.Device.Handle, pool.Handle, 0); res != vulkan.Success {
+		logger.DefaultLogger.Error(vulkan.Error(res))
+		return vulkan.Error(res)
+	}
+
+	return nil
+}
+
 func FreeVulkanCommandPool(pool *VulkanCommandPool) error {
 	vulkan.DestroyCommandPool(pool.Device.Handle, pool.Handle, nil)
 	return nil

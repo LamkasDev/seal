@@ -15,6 +15,7 @@ const (
 	LOADING_STAGE_CREATING_PIPELINE         = "renderer > creating pipeline"
 	LOADING_STAGE_CREATING_SWAPCHAIN        = "renderer > creating swapchain"
 	LOADING_STAGE_CREATING_INPUT            = "creating input"
+	LOADING_STAGE_CREATING_SCENE            = "creating scene"
 )
 
 var LoadingStages = []string{
@@ -30,6 +31,7 @@ var LoadingStages = []string{
 	LOADING_STAGE_CREATING_PIPELINE,
 	LOADING_STAGE_CREATING_SWAPCHAIN,
 	LOADING_STAGE_CREATING_INPUT,
+	LOADING_STAGE_CREATING_SCENE,
 }
 var LoadingStagesLength = len(LoadingStages)
 

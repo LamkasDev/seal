@@ -5,13 +5,16 @@ import (
 )
 
 type VulkanPipelineLayoutOptions struct {
-	CreateInfo vulkan.PipelineLayoutCreateInfo
+	DescriptorSet *VulkanDescriptorSetLayout
+	CreateInfo    vulkan.PipelineLayoutCreateInfo
 }
 
-func NewVulkanPipelineLayoutOptions() VulkanPipelineLayoutOptions {
+func NewVulkanPipelineLayoutOptions(descriptorSet *VulkanDescriptorSetLayout) VulkanPipelineLayoutOptions {
 	options := VulkanPipelineLayoutOptions{
 		CreateInfo: vulkan.PipelineLayoutCreateInfo{
-			SType: vulkan.StructureTypePipelineLayoutCreateInfo,
+			SType:          vulkan.StructureTypePipelineLayoutCreateInfo,
+			SetLayoutCount: 1,
+			PSetLayouts:    []vulkan.DescriptorSetLayout{descriptorSet.Handle},
 		},
 	}
 

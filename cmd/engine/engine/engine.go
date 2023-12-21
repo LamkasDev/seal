@@ -6,12 +6,16 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
+	"github.com/LamkasDev/seal/cmd/engine/scene"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
+
+var EngineInstance Engine
 
 type Engine struct {
 	Renderer renderer.Renderer
 	Input    input.Input
+	Scene    scene.Scene
 }
 
 func NewEngine() (Engine, error) {
@@ -22,9 +26,18 @@ func NewEngine() (Engine, error) {
 	if engine.Renderer, err = renderer.NewRenderer(); err != nil {
 		return engine, err
 	}
+	renderer.RendererInstance = engine.Renderer
 
 	progress.AdvanceLoading()
 	if engine.Input, err = input.NewInput(); err != nil {
+		return engine, err
+	}
+
+	progress.AdvanceLoading()
+	if engine.Scene, err = scene.NewScene(); err != nil {
+		return engine, err
+	}
+	if err = scene.SpawnSceneModel(&engine.Scene); err != nil {
 		return engine, err
 	}
 
@@ -38,7 +51,7 @@ func RunEngine(engine *Engine) error {
 	deltaUpdate, deltaFrame := float64(0), float64(0)
 	targetUpdate, targetFrame := float64(1000/ups), float64(1000/fps)
 
-	for true {
+	for {
 		now := time.Now().UnixMilli()
 		diff := float64(now - last)
 		deltaUpdate += diff / targetUpdate
@@ -56,7 +69,7 @@ func RunEngine(engine *Engine) error {
 			if engine.Renderer.Window.Handle.ShouldClose() {
 				break
 			}
-			if err := renderer.RunRenderer(&engine.Renderer); err != nil {
+			if err := scene.RenderScene(&engine.Scene); err != nil {
 				return err
 			}
 			_ = now - lastFrame
