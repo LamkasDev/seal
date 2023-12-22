@@ -1,4 +1,4 @@
-package layout
+package descriptor
 
 import (
 	"github.com/vulkan-go/vulkan"

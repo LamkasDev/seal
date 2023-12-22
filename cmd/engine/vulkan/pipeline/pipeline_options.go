@@ -1,8 +1,8 @@
 package pipeline
 
 import (
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
@@ -22,7 +22,7 @@ type VulkanPipelineOptions struct {
 	CreateInfo                vulkan.GraphicsPipelineCreateInfo
 }
 
-func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) VulkanPipelineOptions {
+func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) VulkanPipelineOptions {
 	options := VulkanPipelineOptions{
 		DynamicState: vulkan.PipelineDynamicStateCreateInfo{
 			SType:             vulkan.StructureTypePipelineDynamicStateCreateInfo,
@@ -49,7 +49,7 @@ func NewVulkanPipelineOptions(layout *layout.VulkanPipelineLayout, viewport *vie
 			PolygonMode:             vulkan.PolygonModeFill,
 			LineWidth:               1,
 			CullMode:                vulkan.CullModeFlags(vulkan.CullModeBackBit),
-			FrontFace:               vulkan.FrontFaceClockwise,
+			FrontFace:               vulkan.FrontFaceCounterClockwise,
 			DepthBiasEnable:         vulkan.Bool32(0),
 		},
 		MultisampleState: vulkan.PipelineMultisampleStateCreateInfo{

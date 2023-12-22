@@ -1,6 +1,7 @@
-package component
+package entity
 
 type EntityComponent struct {
+	Entity *Entity
 	Data   EntityComponentMeshData
 	Render func(component *EntityComponent) error
 }

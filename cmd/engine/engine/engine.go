@@ -3,10 +3,12 @@ package engine
 import (
 	"time"
 
+	"github.com/EngoEngine/glm"
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	"github.com/LamkasDev/seal/cmd/engine/scene"
+	sealTime "github.com/LamkasDev/seal/cmd/engine/time"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
@@ -37,7 +39,7 @@ func NewEngine() (Engine, error) {
 	if engine.Scene, err = scene.NewScene(); err != nil {
 		return engine, err
 	}
-	if err = scene.SpawnSceneModel(&engine.Scene); err != nil {
+	if err = scene.SpawnSceneModel(&engine.Scene, glm.Vec3{0, 0, 0}); err != nil {
 		return engine, err
 	}
 
@@ -72,7 +74,7 @@ func RunEngine(engine *Engine) error {
 			if err := scene.RenderScene(&engine.Scene); err != nil {
 				return err
 			}
-			_ = now - lastFrame
+			sealTime.DeltaTime = float32(now-lastFrame) / 1000
 			lastFrame = now
 			deltaFrame--
 		}

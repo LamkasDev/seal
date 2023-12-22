@@ -1,12 +1,14 @@
 package pipeline
 
 import (
+	"github.com/EngoEngine/glm"
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
+	"github.com/LamkasDev/seal/cmd/engine/time"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
@@ -22,7 +24,7 @@ type VulkanPipeline struct {
 	Container  *shader.VulkanShaderContainer
 	Window     *window.Window
 	Viewport   viewport.VulkanViewport
-	Layout     layout.VulkanPipelineLayout
+	Layout     pipeline_layout.VulkanPipelineLayout
 	RenderPass pass.VulkanRenderPass
 	Syncer     VulkanPipelineSyncer
 	Commander  VulkanPipelineCommander
@@ -43,7 +45,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 		Viewport:  viewport.NewVulkanViewport(cwindow.Data.Extent),
 	}
 
-	if pipeline.Layout, err = layout.NewVulkanPipelineLayout(device); err != nil {
+	if pipeline.Layout, err = pipeline_layout.NewVulkanPipelineLayout(device); err != nil {
 		return pipeline, err
 	}
 	if pipeline.RenderPass, err = pass.NewVulkanRenderPass(device, device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].Format); err != nil {
@@ -55,7 +57,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 	if pipeline.Commander, err = NewVulkanPipelineCommander(device); err != nil {
 		return pipeline, err
 	}
-	if pipeline.Mesh, err = mesh.NewVulkanMesh(device, buffer.NewVulkanMeshBufferOptions(vertex.DefaultVertices, vertex.DefaultVerticesIndex, uniform.NewVulkanUniform(cwindow.Data.Extent))); err != nil {
+	if pipeline.Mesh, err = mesh.NewVulkanMesh(device, &pipeline.Layout, buffer.NewVulkanMeshBufferOptions(vertex.DefaultVertices, vertex.DefaultVerticesIndex, uniform.NewVulkanUniform(cwindow.Data.Extent, glm.Vec3{0, 0, 1}, time.DeltaTime))); err != nil {
 		return pipeline, err
 	}
 	pipeline.Options = NewVulkanPipelineOptions(&pipeline.Layout, &pipeline.Viewport, &pipeline.RenderPass, container)
@@ -133,7 +135,7 @@ func FreeVulkanPipeline(pipeline *VulkanPipeline) error {
 	if err := pass.FreeVulkanRenderPass(&pipeline.RenderPass); err != nil {
 		return err
 	}
-	if err := layout.FreeVulkanPipelineLayout(&pipeline.Layout); err != nil {
+	if err := pipeline_layout.FreeVulkanPipelineLayout(&pipeline.Layout); err != nil {
 		return err
 	}
 	vulkan.DestroyPipeline(pipeline.Device.Handle, pipeline.Handle, nil)

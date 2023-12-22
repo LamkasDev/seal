@@ -1,16 +1,18 @@
 package entity
 
-import (
-	sealComponent "github.com/LamkasDev/seal/cmd/engine/entity/component"
-)
+import "github.com/EngoEngine/glm"
 
 type Entity struct {
-	Components []sealComponent.EntityComponent
+	Position   glm.Vec3
+	Rotation   float32
+	Components []EntityComponent
 }
 
-func NewEntity() (Entity, error) {
+func NewEntity(position glm.Vec3) (Entity, error) {
 	entity := Entity{
-		Components: []sealComponent.EntityComponent{},
+		Position:   position,
+		Rotation:   0,
+		Components: []EntityComponent{},
 	}
 
 	return entity, nil
@@ -18,7 +20,7 @@ func NewEntity() (Entity, error) {
 
 func RenderEntity(entity *Entity) error {
 	for _, component := range entity.Components {
-		if err := sealComponent.RenderEntityComponent(&component); err != nil {
+		if err := RenderEntityComponent(&component); err != nil {
 			return err
 		}
 	}
@@ -28,7 +30,7 @@ func RenderEntity(entity *Entity) error {
 
 func FreeEntity(entity *Entity) error {
 	for _, component := range entity.Components {
-		if err := sealComponent.FreeEntityComponent(&component); err != nil {
+		if err := FreeEntityComponent(&component); err != nil {
 			return err
 		}
 	}

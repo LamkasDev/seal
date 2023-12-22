@@ -1,9 +1,9 @@
 package scene
 
 import (
+	"github.com/EngoEngine/glm"
 	"github.com/LamkasDev/seal/cmd/engine/entity"
 	sealEntity "github.com/LamkasDev/seal/cmd/engine/entity"
-	sealComponent "github.com/LamkasDev/seal/cmd/engine/entity/component"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
 )
 
@@ -19,12 +19,12 @@ func NewScene() (Scene, error) {
 	return scene, nil
 }
 
-func SpawnSceneModel(scene *Scene) error {
-	centity, err := entity.NewEntity()
+func SpawnSceneModel(scene *Scene, position glm.Vec3) error {
+	centity, err := entity.NewEntity(position)
 	if err != nil {
 		return err
 	}
-	component, err := sealComponent.NewEntityComponent(renderer.RendererInstance.Pipeline.Mesh)
+	component, err := entity.NewEntityComponentMesh(&centity, renderer.RendererInstance.Pipeline.Mesh)
 	if err != nil {
 		return err
 	}

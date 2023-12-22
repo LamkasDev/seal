@@ -4,6 +4,7 @@ import (
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
 	sealUniform "github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
+	"github.com/samber/lo"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -17,7 +18,9 @@ func NewVulkanMeshBufferOptions(vertices []vertex.VulkanVertex, indices []uint16
 	data := VulkanMeshBufferOptions{
 		Vertices: vertices,
 		Indices:  indices,
-		Uniforms: make([]sealUniform.VulkanUniform, commonPipeline.MaxFramesInFlight),
+		Uniforms: lo.RepeatBy(commonPipeline.MaxFramesInFlight, func(index int) sealUniform.VulkanUniform {
+			return uniform
+		}),
 	}
 
 	return data
@@ -40,7 +43,7 @@ func GetVulkanMeshBufferOptionsIndicesSize(options *VulkanMeshBufferOptions) vul
 }
 
 func GetVulkanMeshBufferOptionsUniformsOffset(options *VulkanMeshBufferOptions) vulkan.DeviceSize {
-	return GetVulkanMeshBufferOptionsIndicesOffset(options) + GetVulkanMeshBufferOptionsIndicesSize(options)
+	return GetVulkanMeshBufferOptionsIndicesOffset(options) + GetVulkanMeshBufferOptionsIndicesSize(options) + 4
 }
 
 func GetVulkanMeshBufferOptionsUniformsSize(options *VulkanMeshBufferOptions) vulkan.DeviceSize {
@@ -48,5 +51,5 @@ func GetVulkanMeshBufferOptionsUniformsSize(options *VulkanMeshBufferOptions) vu
 }
 
 func GetVulkanMeshBufferOptionsSize(options *VulkanMeshBufferOptions) vulkan.DeviceSize {
-	return GetVulkanMeshBufferOptionsVerticesSize(options) + GetVulkanMeshBufferOptionsIndicesSize(options) + GetVulkanMeshBufferOptionsUniformsSize(options)
+	return GetVulkanMeshBufferOptionsVerticesSize(options) + GetVulkanMeshBufferOptionsIndicesSize(options) + GetVulkanMeshBufferOptionsUniformsSize(options) + 4
 }
