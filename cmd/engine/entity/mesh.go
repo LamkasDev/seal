@@ -7,6 +7,7 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/descriptor"
 	sealMesh "github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/transform_buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
 	sealUniform "github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
@@ -59,7 +60,7 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 
 	writeDescriptorSets := []vulkan.WriteDescriptorSet{}
 	for i := startFrame; i < endFrame; i++ {
-		writeDescriptorSets = append(writeDescriptorSets, vulkan.WriteDescriptorSet{
+		uniformDescriptorSet := vulkan.WriteDescriptorSet{
 			SType:           vulkan.StructureTypeWriteDescriptorSet,
 			DstSet:          data.DescriptorSets[i].Handle,
 			DstBinding:      0,
@@ -73,7 +74,25 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 					Range:  vulkan.DeviceSize(uniform.VulkanUniformSize),
 				},
 			},
-		})
+		}
+		writeDescriptorSets = append(writeDescriptorSets, uniformDescriptorSet)
+
+		textureDescriptorSet := vulkan.WriteDescriptorSet{
+			SType:           vulkan.StructureTypeWriteDescriptorSet,
+			DstSet:          data.DescriptorSets[i].Handle,
+			DstBinding:      1,
+			DstArrayElement: 0,
+			DescriptorType:  vulkan.DescriptorTypeCombinedImageSampler,
+			DescriptorCount: 1,
+			PImageInfo: []vulkan.DescriptorImageInfo{
+				{
+					ImageLayout: vulkan.ImageLayoutShaderReadOnlyOptimal,
+					ImageView:   renderer.RendererInstance.Pipeline.TextureContainer.Textures[texture.TEXTURE_BASIC].ImageView.Handle,
+					Sampler:     renderer.RendererInstance.Pipeline.Sampler.Handle,
+				},
+			},
+		}
+		writeDescriptorSets = append(writeDescriptorSets, textureDescriptorSet)
 	}
 	vulkan.UpdateDescriptorSets(data.Mesh.Device.Handle, uint32(len(writeDescriptorSets)), writeDescriptorSets, 0, nil)
 

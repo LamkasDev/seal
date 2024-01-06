@@ -53,5 +53,6 @@ func IsVulkanPhysicalDeviceSupported(device *VulkanPhysicalDevice) bool {
 		device.Capabilities.Queue.PresentationIndex != -1 &&
 		device.Capabilities.Surface.ImageFormatIndex != -1 &&
 		len(device.Capabilities.Surface.PresentModes) > 0 &&
-		slices.Contains(device.Capabilities.ExtensionNames, vulkan.KhrSwapchainExtensionName)
+		slices.Contains(device.Capabilities.ExtensionNames, vulkan.KhrSwapchainExtensionName) &&
+		device.Features.SamplerAnisotropy == vulkan.True
 }

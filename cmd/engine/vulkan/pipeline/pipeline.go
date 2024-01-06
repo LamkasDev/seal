@@ -9,7 +9,9 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/sampler"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	sealTexture "github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/LamkasDev/seal/cmd/engine/window"
@@ -25,11 +27,13 @@ type VulkanPipeline struct {
 	Camera                  transform.VulkanTransform
 	Layout                  pipeline_layout.VulkanPipelineLayout
 	Viewport                viewport.VulkanViewport
+	TextureContainer        sealTexture.VulkanTextureContainer
 	ShaderContainer         shader.VulkanShaderContainer
 	DescriptorPoolContainer descriptor.VulkanDescriptorPoolContainer
 	BufferContainer         buffer.VulkanBufferContainer
 	MeshContainer           mesh.VulkanMeshContainer
 
+	Sampler    sampler.VulkanSampler
 	RenderPass pass.VulkanRenderPass
 	Syncer     VulkanPipelineSyncer
 	Commander  VulkanPipelineCommander
@@ -61,7 +65,13 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, cwindow *window.Wind
 	if pipeline.BufferContainer, err = buffer.NewVulkanBufferContainer(device); err != nil {
 		return pipeline, err
 	}
+	if pipeline.TextureContainer, err = sealTexture.NewVulkanTextureContainer(device); err != nil {
+		return pipeline, err
+	}
 	if pipeline.MeshContainer, err = mesh.NewVulkanMeshContainer(device, &pipeline.Layout); err != nil {
+		return pipeline, err
+	}
+	if pipeline.Sampler, err = sampler.NewVulkanSampler(device); err != nil {
 		return pipeline, err
 	}
 	if pipeline.RenderPass, err = pass.NewVulkanRenderPass(device, device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].Format); err != nil {
@@ -96,6 +106,27 @@ func PushVulkanPipelineBuffers(pipeline *VulkanPipeline) error {
 		return err
 	}
 
+	for _, texture := range pipeline.TextureContainer.Textures {
+		ApplyVulkanTextureBarrier(pipeline, &texture, vulkan.ImageLayoutUndefined, vulkan.ImageLayoutTransferDstOptimal)
+
+		imageCopy := vulkan.BufferImageCopy{
+			BufferOffset:      0,
+			BufferRowLength:   0,
+			BufferImageHeight: 0,
+			ImageSubresource: vulkan.ImageSubresourceLayers{
+				AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+				MipLevel:       0,
+				BaseArrayLayer: 0,
+				LayerCount:     1,
+			},
+			ImageOffset: vulkan.Offset3D{X: 0, Y: 0, Z: 0},
+			ImageExtent: texture.Image.Options.CreateInfo.Extent,
+		}
+		vulkan.CmdCopyBufferToImage(pipeline.Commander.StagingBuffer.Handle, texture.Buffer.StagingBuffer.Handle, texture.Image.Handle, vulkan.ImageLayoutTransferDstOptimal, 1, []vulkan.BufferImageCopy{imageCopy})
+
+		ApplyVulkanTextureBarrier(pipeline, &texture, vulkan.ImageLayoutTransferDstOptimal, vulkan.ImageLayoutShaderReadOnlyOptimal)
+	}
+
 	for _, mesh := range pipeline.MeshContainer.Meshes {
 		bufferCopy := vulkan.BufferCopy{
 			Size: mesh.Buffer.StagingBuffer.Options.CreateInfo.Size,
@@ -124,6 +155,41 @@ func PushVulkanPipelineBuffers(pipeline *VulkanPipeline) error {
 	return nil
 }
 
+func ApplyVulkanTextureBarrier(pipeline *VulkanPipeline, texture *sealTexture.VulkanTexture, oldLayout vulkan.ImageLayout, newLayout vulkan.ImageLayout) {
+	var srcStage, dstStage vulkan.PipelineStageFlags
+	barrier := vulkan.ImageMemoryBarrier{
+		SType:               vulkan.StructureTypeImageMemoryBarrier,
+		OldLayout:           oldLayout,
+		NewLayout:           newLayout,
+		SrcQueueFamilyIndex: vulkan.QueueFamilyIgnored,
+		DstQueueFamilyIndex: vulkan.QueueFamilyIgnored,
+		Image:               texture.Image.Handle,
+		SubresourceRange: vulkan.ImageSubresourceRange{
+			AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+			BaseMipLevel:   0,
+			LevelCount:     1,
+			BaseArrayLayer: 0,
+			LayerCount:     1,
+		},
+	}
+
+	if oldLayout == vulkan.ImageLayoutUndefined && newLayout == vulkan.ImageLayoutTransferDstOptimal {
+		barrier.SrcAccessMask = 0
+		barrier.DstAccessMask = vulkan.AccessFlags(vulkan.AccessTransferWriteBit)
+		srcStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTopOfPipeBit)
+		dstStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTransferBit)
+	} else if oldLayout == vulkan.ImageLayoutTransferDstOptimal && newLayout == vulkan.ImageLayoutShaderReadOnlyOptimal {
+		barrier.SrcAccessMask = vulkan.AccessFlags(vulkan.AccessTransferWriteBit)
+		barrier.DstAccessMask = vulkan.AccessFlags(vulkan.AccessShaderReadBit)
+		srcStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTransferBit)
+		dstStage = vulkan.PipelineStageFlags(vulkan.PipelineStageFragmentShaderBit)
+	} else {
+		panic("what")
+	}
+
+	vulkan.CmdPipelineBarrier(pipeline.Commander.StagingBuffer.Handle, srcStage, dstStage, 0, 0, nil, 0, nil, 1, []vulkan.ImageMemoryBarrier{barrier})
+}
+
 func ResizeVulkanPipeline(pipeline *VulkanPipeline) error {
 	pipeline.Viewport = viewport.NewVulkanViewport(pipeline.Window.Data.Extent)
 	return nil
@@ -146,7 +212,13 @@ func FreeVulkanPipeline(pipeline *VulkanPipeline) error {
 	if err := pass.FreeVulkanRenderPass(&pipeline.RenderPass); err != nil {
 		return err
 	}
+	if err := sampler.FreeVulkanSampler(&pipeline.Sampler); err != nil {
+		return err
+	}
 	if err := mesh.FreeVulkanMeshContainer(&pipeline.MeshContainer); err != nil {
+		return err
+	}
+	if err := sealTexture.FreeVulkanTextureContainer(&pipeline.TextureContainer); err != nil {
 		return err
 	}
 	if err := buffer.FreeVulkanBufferContainer(&pipeline.BufferContainer); err != nil {

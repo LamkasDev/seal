@@ -1,6 +1,8 @@
 package shader
 
 import (
+	"os"
+
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/logger"
 )
@@ -20,6 +22,11 @@ func NewVulkanShaderContainer(device *logical.VulkanLogicalDevice) (VulkanShader
 	container := VulkanShaderContainer{
 		Device:  device,
 		Shaders: map[string]VulkanShader{},
+	}
+
+	if err := os.MkdirAll("../shaders", 0755); err != nil {
+		logger.DefaultLogger.Error(err)
+		return container, err
 	}
 	for _, shader := range DefaultShaders {
 		if _, err := CreateVulkanShaderWithContainer(&container, shader); err != nil {

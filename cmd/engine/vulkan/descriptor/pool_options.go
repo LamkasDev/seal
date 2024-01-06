@@ -12,12 +12,21 @@ type VulkanDescriptorPoolOptions struct {
 func NewVulkanDescriptorPoolOptions() VulkanDescriptorPoolOptions {
 	options := VulkanDescriptorPoolOptions{
 		CreateInfo: vulkan.DescriptorPoolCreateInfo{
-			SType:         vulkan.StructureTypeDescriptorPoolCreateInfo,
-			PoolSizeCount: 1,
-			PPoolSizes:    []vulkan.DescriptorPoolSize{{Type: vulkan.DescriptorTypeUniformBuffer, DescriptorCount: commonPipeline.MaxFramesInFlight}},
-			MaxSets:       commonPipeline.MaxFramesInFlight,
+			SType: vulkan.StructureTypeDescriptorPoolCreateInfo,
+			PPoolSizes: []vulkan.DescriptorPoolSize{
+				{
+					Type:            vulkan.DescriptorTypeUniformBuffer,
+					DescriptorCount: commonPipeline.MaxFramesInFlight,
+				},
+				{
+					Type:            vulkan.DescriptorTypeCombinedImageSampler,
+					DescriptorCount: commonPipeline.MaxFramesInFlight,
+				},
+			},
+			MaxSets: commonPipeline.MaxFramesInFlight,
 		},
 	}
+	options.CreateInfo.PoolSizeCount = uint32(len(options.CreateInfo.PPoolSizes))
 
 	return options
 }
