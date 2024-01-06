@@ -27,6 +27,7 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/eapache/queue.v1 v1.1.0 // indirect
+	neilpa.me/go-stbi v1.1.0 // indirect
 )
 
 require (

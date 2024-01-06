@@ -6,7 +6,9 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/swapchain"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
@@ -15,11 +17,13 @@ import (
 var RendererInstance *Renderer
 
 type Renderer struct {
-	VulkanInstance sealVulkan.VulkanInstance
-	Window         window.Window
-	Surface        vulkan.Surface
-	Pipeline       pipeline.VulkanPipeline
-	Swapchain      swapchain.VulkanSwapchain
+	VulkanInstance   sealVulkan.VulkanInstance
+	Window           window.Window
+	Surface          vulkan.Surface
+	TextureContainer texture.VulkanTextureContainer
+	ShaderContainer  shader.VulkanShaderContainer
+	Pipeline         pipeline.VulkanPipeline
+	Swapchain        swapchain.VulkanSwapchain
 }
 
 func NewRenderer() (Renderer, error) {
@@ -47,6 +51,16 @@ func NewRenderer() (Renderer, error) {
 
 	progress.AdvanceLoading()
 	if err := sealVulkan.InitializeVulkanInstanceDevices(&renderer.VulkanInstance, &renderer.Window, &renderer.Surface); err != nil {
+		return renderer, err
+	}
+
+	progress.AdvanceLoading()
+	if renderer.TextureContainer, err = texture.NewVulkanTextureContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
+		return renderer, err
+	}
+
+	progress.AdvanceLoading()
+	if renderer.ShaderContainer, err = shader.NewVulkanShaderContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
 		return renderer, err
 	}
 

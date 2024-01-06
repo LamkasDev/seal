@@ -100,3 +100,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/eapache/queue.v1 v1.1.0 h1:EldqoJEGtXYiVCMRo2C9mePO2UUGnYn2+qLmlQSqPdc=
 gopkg.in/eapache/queue.v1 v1.1.0/go.mod h1:wNtmx1/O7kZSR9zNT1TTOJ7GLpm3Vn7srzlfylFbQwU=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+neilpa.me/go-stbi v1.1.0 h1:UEsMe0xPKVinSUFGmEAl2v4UdfIJBbdtET4meOCcxVw=
+neilpa.me/go-stbi v1.1.0/go.mod h1:boQQ2VfdXnplejWStf+bmQYF5XLA/V+RhqrugwrZ59A=
