@@ -3,15 +3,14 @@ package pipeline
 import (
 	"github.com/EngoEngine/glm"
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
-	"github.com/LamkasDev/seal/cmd/engine/time"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/descriptor"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
@@ -19,16 +18,21 @@ import (
 )
 
 type VulkanPipeline struct {
-	Handle     vulkan.Pipeline
-	Device     *logical.VulkanLogicalDevice
-	Container  *shader.VulkanShaderContainer
-	Window     *window.Window
-	Viewport   viewport.VulkanViewport
-	Layout     pipeline_layout.VulkanPipelineLayout
+	Handle vulkan.Pipeline
+	Device *logical.VulkanLogicalDevice
+	Window *window.Window
+
+	Camera                  transform.VulkanTransform
+	Layout                  pipeline_layout.VulkanPipelineLayout
+	Viewport                viewport.VulkanViewport
+	ShaderContainer         shader.VulkanShaderContainer
+	DescriptorPoolContainer descriptor.VulkanDescriptorPoolContainer
+	BufferContainer         buffer.VulkanBufferContainer
+	MeshContainer           mesh.VulkanMeshContainer
+
 	RenderPass pass.VulkanRenderPass
 	Syncer     VulkanPipelineSyncer
 	Commander  VulkanPipelineCommander
-	Mesh       mesh.VulkanMesh
 	Options    VulkanPipelineOptions
 
 	ImageIndex    uint32
@@ -36,16 +40,28 @@ type VulkanPipeline struct {
 	CurrentFrame  uint32
 }
 
-func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.VulkanShaderContainer, cwindow *window.Window) (VulkanPipeline, error) {
+func NewVulkanPipeline(device *logical.VulkanLogicalDevice, cwindow *window.Window) (VulkanPipeline, error) {
 	var err error
 	pipeline := VulkanPipeline{
-		Device:    device,
-		Container: container,
-		Window:    cwindow,
-		Viewport:  viewport.NewVulkanViewport(cwindow.Data.Extent),
+		Device:   device,
+		Window:   cwindow,
+		Camera:   transform.VulkanTransform{Position: glm.Vec3{0, 0, 2}},
+		Viewport: viewport.NewVulkanViewport(cwindow.Data.Extent),
 	}
 
 	if pipeline.Layout, err = pipeline_layout.NewVulkanPipelineLayout(device); err != nil {
+		return pipeline, err
+	}
+	if pipeline.ShaderContainer, err = shader.NewVulkanShaderContainer(device); err != nil {
+		return pipeline, err
+	}
+	if pipeline.DescriptorPoolContainer, err = descriptor.NewVulkanDescriptorPoolContainer(device); err != nil {
+		return pipeline, err
+	}
+	if pipeline.BufferContainer, err = buffer.NewVulkanBufferContainer(device); err != nil {
+		return pipeline, err
+	}
+	if pipeline.MeshContainer, err = mesh.NewVulkanMeshContainer(device, &pipeline.Layout); err != nil {
 		return pipeline, err
 	}
 	if pipeline.RenderPass, err = pass.NewVulkanRenderPass(device, device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].Format); err != nil {
@@ -57,10 +73,7 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 	if pipeline.Commander, err = NewVulkanPipelineCommander(device); err != nil {
 		return pipeline, err
 	}
-	if pipeline.Mesh, err = mesh.NewVulkanMesh(device, &pipeline.Layout, buffer.NewVulkanMeshBufferOptions(vertex.DefaultVertices, vertex.DefaultVerticesIndex, uniform.NewVulkanUniform(cwindow.Data.Extent, glm.Vec3{0, 0, 1}, time.DeltaTime))); err != nil {
-		return pipeline, err
-	}
-	pipeline.Options = NewVulkanPipelineOptions(&pipeline.Layout, &pipeline.Viewport, &pipeline.RenderPass, container)
+	pipeline.Options = NewVulkanPipelineOptions(&pipeline.Layout, &pipeline.Viewport, &pipeline.RenderPass, &pipeline.ShaderContainer)
 
 	vulkanPipelines := make([]vulkan.Pipeline, 1)
 	if res := vulkan.CreateGraphicsPipelines(device.Handle, nil, 1, []vulkan.GraphicsPipelineCreateInfo{pipeline.Options.CreateInfo}, nil, vulkanPipelines); res != vulkan.Success {
@@ -70,7 +83,6 @@ func NewVulkanPipeline(device *logical.VulkanLogicalDevice, container *shader.Vu
 	pipeline.Handle = vulkanPipelines[0]
 	logger.DefaultLogger.Debug("created new vulkan pipeline")
 
-	// Copy default vertices to vertex buffer
 	if err := PushVulkanPipelineBuffers(&pipeline); err != nil {
 		return pipeline, err
 	}
@@ -84,10 +96,12 @@ func PushVulkanPipelineBuffers(pipeline *VulkanPipeline) error {
 		return err
 	}
 
-	bufferCopy := vulkan.BufferCopy{
-		Size: pipeline.Mesh.Buffer.StagingBuffer.Options.CreateInfo.Size,
+	for _, mesh := range pipeline.MeshContainer.Meshes {
+		bufferCopy := vulkan.BufferCopy{
+			Size: mesh.Buffer.StagingBuffer.Options.CreateInfo.Size,
+		}
+		vulkan.CmdCopyBuffer(pipeline.Commander.StagingBuffer.Handle, mesh.Buffer.StagingBuffer.Handle, mesh.Buffer.DeviceBuffer.Handle, 1, []vulkan.BufferCopy{bufferCopy})
 	}
-	vulkan.CmdCopyBuffer(pipeline.Commander.StagingBuffer.Handle, pipeline.Mesh.Buffer.StagingBuffer.Handle, pipeline.Mesh.Buffer.DeviceBuffer.Handle, 1, []vulkan.BufferCopy{bufferCopy})
 
 	if err := buffer.EndVulkanCommandBuffer(&pipeline.Commander.StagingBuffer); err != nil {
 		return err
@@ -123,21 +137,31 @@ func AdvanceVulkanPipelineFrame(pipeline *VulkanPipeline) error {
 }
 
 func FreeVulkanPipeline(pipeline *VulkanPipeline) error {
-	if err := buffer.FreeVulkanMeshBuffer(&pipeline.Mesh.Buffer); err != nil {
+	if err := FreeVulkanPipelineCommander(&pipeline.Commander); err != nil {
 		return err
 	}
 	if err := FreeVulkanPipelineSyncer(&pipeline.Syncer); err != nil {
 		return err
 	}
-	if err := FreeVulkanPipelineCommander(&pipeline.Commander); err != nil {
+	if err := pass.FreeVulkanRenderPass(&pipeline.RenderPass); err != nil {
 		return err
 	}
-	if err := pass.FreeVulkanRenderPass(&pipeline.RenderPass); err != nil {
+	if err := mesh.FreeVulkanMeshContainer(&pipeline.MeshContainer); err != nil {
+		return err
+	}
+	if err := buffer.FreeVulkanBufferContainer(&pipeline.BufferContainer); err != nil {
+		return err
+	}
+	if err := descriptor.FreeVulkanDescriptorPoolContainer(&pipeline.DescriptorPoolContainer); err != nil {
+		return err
+	}
+	if err := shader.FreeVulkanShaderContainer(&pipeline.ShaderContainer); err != nil {
 		return err
 	}
 	if err := pipeline_layout.FreeVulkanPipelineLayout(&pipeline.Layout); err != nil {
 		return err
 	}
 	vulkan.DestroyPipeline(pipeline.Device.Handle, pipeline.Handle, nil)
+
 	return nil
 }

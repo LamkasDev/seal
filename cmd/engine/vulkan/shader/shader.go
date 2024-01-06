@@ -9,13 +9,16 @@ import (
 )
 
 type VulkanShader struct {
+	Device   *logical.VulkanLogicalDevice
 	Vertex   VulkanShaderModule
 	Fragment VulkanShaderModule
 }
 
 func NewVulkanShader(device *logical.VulkanLogicalDevice, id string) (VulkanShader, error) {
 	var err error
-	shader := VulkanShader{}
+	shader := VulkanShader{
+		Device: device,
+	}
 
 	if shader.Vertex, err = NewVulkanShaderModule(device, fmt.Sprintf("%s.vert", id), vulkan.ShaderStageVertexBit); err != nil {
 		return shader, err
@@ -28,11 +31,11 @@ func NewVulkanShader(device *logical.VulkanLogicalDevice, id string) (VulkanShad
 	return shader, nil
 }
 
-func FreeVulkanShader(device *logical.VulkanLogicalDevice, shader *VulkanShader) error {
-	if err := FreeVulkanShaderModule(device, &shader.Vertex); err != nil {
+func FreeVulkanShader(shader *VulkanShader) error {
+	if err := FreeVulkanShaderModule(shader.Device, &shader.Vertex); err != nil {
 		return err
 	}
-	if err := FreeVulkanShaderModule(device, &shader.Fragment); err != nil {
+	if err := FreeVulkanShaderModule(shader.Device, &shader.Fragment); err != nil {
 		return err
 	}
 

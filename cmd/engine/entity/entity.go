@@ -1,21 +1,29 @@
 package entity
 
-import "github.com/EngoEngine/glm"
+import sealTransform "github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 
 type Entity struct {
-	Position   glm.Vec3
-	Rotation   float32
+	Transform  sealTransform.VulkanTransform
 	Components []EntityComponent
 }
 
-func NewEntity(position glm.Vec3) (Entity, error) {
+func NewEntity(transform sealTransform.VulkanTransform) (Entity, error) {
 	entity := Entity{
-		Position:   position,
-		Rotation:   0,
+		Transform:  transform,
 		Components: []EntityComponent{},
 	}
 
 	return entity, nil
+}
+
+func UpdateEntity(entity *Entity) error {
+	for _, component := range entity.Components {
+		if err := UpdateEntityComponent(&component); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func RenderEntity(entity *Entity) error {

@@ -32,6 +32,7 @@ func NewVulkanPhysicalDevice(handle vulkan.PhysicalDevice, cwindow *window.Windo
 
 	vulkan.GetPhysicalDeviceProperties(device.Handle, &device.Properties)
 	device.Properties.Deref()
+	device.Properties.Limits.Deref()
 	vulkan.GetPhysicalDeviceFeatures(device.Handle, &device.Features)
 	device.Features.Deref()
 

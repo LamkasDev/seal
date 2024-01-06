@@ -9,7 +9,7 @@ GOTAGS=$(SEALPLATFORM),sealdebug
 buildengine:
 	@set GOOS=$(GOOS)
 	@set GOARCH=$(GOARCH)
-	@go build -o build/$(SEALPLATFORM)/seal_engine.exe -tags $(GOTAGS) cmd/engine/main.go
+	@go build -o build/$(SEALPLATFORM)/seal_engine.exe -tags $(GOTAGS) cmd/game/main.go
 
 build: buildengine
 

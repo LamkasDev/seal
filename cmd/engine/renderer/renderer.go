@@ -6,22 +6,20 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/swapchain"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
-var RendererInstance Renderer
+var RendererInstance *Renderer
 
 type Renderer struct {
-	VulkanInstance  sealVulkan.VulkanInstance
-	Window          window.Window
-	Surface         vulkan.Surface
-	ShaderContainer shader.VulkanShaderContainer
-	Pipeline        pipeline.VulkanPipeline
-	Swapchain       swapchain.VulkanSwapchain
+	VulkanInstance sealVulkan.VulkanInstance
+	Window         window.Window
+	Surface        vulkan.Surface
+	Pipeline       pipeline.VulkanPipeline
+	Swapchain      swapchain.VulkanSwapchain
 }
 
 func NewRenderer() (Renderer, error) {
@@ -53,12 +51,7 @@ func NewRenderer() (Renderer, error) {
 	}
 
 	progress.AdvanceLoading()
-	if renderer.ShaderContainer, err = shader.NewVulkanShaderContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
-		return renderer, err
-	}
-
-	progress.AdvanceLoading()
-	if renderer.Pipeline, err = pipeline.NewVulkanPipeline(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.ShaderContainer, &renderer.Window); err != nil {
+	if renderer.Pipeline, err = pipeline.NewVulkanPipeline(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Window); err != nil {
 		return renderer, err
 	}
 
@@ -132,8 +125,6 @@ func BeginRendererFrame(renderer *Renderer) error {
 	if err := BeginVulkanRenderPass(renderer, renderer.Pipeline.ImageIndex); err != nil {
 		return err
 	}
-	vulkan.CmdBindVertexBuffers(renderer.Pipeline.CommandBuffer.Handle, 0, 1, []vulkan.Buffer{renderer.Pipeline.Mesh.Buffer.DeviceBuffer.Handle}, []vulkan.DeviceSize{buffer.GetVulkanMeshBufferOptionsVerticesOffset(&renderer.Pipeline.Mesh.Buffer.Options)})
-	vulkan.CmdBindIndexBuffer(renderer.Pipeline.CommandBuffer.Handle, renderer.Pipeline.Mesh.Buffer.DeviceBuffer.Handle, buffer.GetVulkanMeshBufferOptionsIndicesOffset(&renderer.Pipeline.Mesh.Buffer.Options), vulkan.IndexTypeUint16)
 	vulkan.CmdBindPipeline(renderer.Pipeline.CommandBuffer.Handle, vulkan.PipelineBindPointGraphics, renderer.Pipeline.Handle)
 	vulkan.CmdSetViewport(renderer.Pipeline.CommandBuffer.Handle, 0, 1, []vulkan.Viewport{
 		{
@@ -174,9 +165,6 @@ func FreeRenderer(renderer *Renderer) error {
 		return err
 	}
 	if err := pipeline.FreeVulkanPipeline(&renderer.Pipeline); err != nil {
-		return err
-	}
-	if err := shader.FreeVulkanShaderContainer(&renderer.ShaderContainer); err != nil {
 		return err
 	}
 	vulkan.DestroySurface(renderer.VulkanInstance.Handle, renderer.Surface, nil)

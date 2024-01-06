@@ -43,7 +43,7 @@ func CreateVulkanShaderWithContainer(container *VulkanShaderContainer, id string
 
 func FreeVulkanShaderContainer(container *VulkanShaderContainer) error {
 	for _, shader := range container.Shaders {
-		if err := FreeVulkanShader(container.Device, &shader); err != nil {
+		if err := FreeVulkanShader(&shader); err != nil {
 			return err
 		}
 	}

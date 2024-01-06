@@ -3,7 +3,6 @@ package engine
 import (
 	"time"
 
-	"github.com/EngoEngine/glm"
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/renderer"
@@ -12,12 +11,10 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-var EngineInstance Engine
-
 type Engine struct {
 	Renderer renderer.Renderer
-	Input    input.Input
 	Scene    scene.Scene
+	Input    input.Input
 }
 
 func NewEngine() (Engine, error) {
@@ -28,18 +25,14 @@ func NewEngine() (Engine, error) {
 	if engine.Renderer, err = renderer.NewRenderer(); err != nil {
 		return engine, err
 	}
-	renderer.RendererInstance = engine.Renderer
-
-	progress.AdvanceLoading()
-	if engine.Input, err = input.NewInput(); err != nil {
-		return engine, err
-	}
 
 	progress.AdvanceLoading()
 	if engine.Scene, err = scene.NewScene(); err != nil {
 		return engine, err
 	}
-	if err = scene.SpawnSceneModel(&engine.Scene, glm.Vec3{0, 0, 0}); err != nil {
+
+	progress.AdvanceLoading()
+	if engine.Input, err = input.NewInput(&engine.Scene); err != nil {
 		return engine, err
 	}
 
@@ -60,6 +53,9 @@ func RunEngine(engine *Engine) error {
 		deltaFrame += diff / targetFrame
 		if deltaUpdate > 1 {
 			if err := input.RunInput(&engine.Input); err != nil {
+				return err
+			}
+			if err := scene.UpdateScene(&engine.Scene); err != nil {
 				return err
 			}
 			_ = now - lastUpdate

@@ -6,26 +6,35 @@ import (
 	"github.com/vulkan-go/vulkan"
 )
 
+type VulkanBufferOptionsData struct {
+	Size        vulkan.DeviceSize
+	Usage       vulkan.BufferUsageFlags
+	SharingMode vulkan.SharingMode
+	Flags       vulkan.MemoryPropertyFlags
+}
+
 type VulkanBufferOptions struct {
+	Data         VulkanBufferOptionsData
 	CreateInfo   vulkan.BufferCreateInfo
 	AllocateInfo vulkan.MemoryAllocateInfo
 }
 
-func NewVulkanBufferOptions(size vulkan.DeviceSize, usage vulkan.BufferUsageFlags, sharingMode vulkan.SharingMode) VulkanBufferOptions {
+func NewVulkanBufferOptions(data VulkanBufferOptionsData) VulkanBufferOptions {
 	options := VulkanBufferOptions{
+		Data: data,
 		CreateInfo: vulkan.BufferCreateInfo{
 			SType:       vulkan.StructureTypeBufferCreateInfo,
-			Size:        size,
-			Usage:       usage,
-			SharingMode: sharingMode,
+			Size:        data.Size,
+			Usage:       data.Usage,
+			SharingMode: data.SharingMode,
 		},
 	}
 
 	return options
 }
 
-func UpdateVulkanBufferOptions(options *VulkanBufferOptions, device *logical.VulkanLogicalDevice, requirements vulkan.MemoryRequirements, flags vulkan.MemoryPropertyFlags) error {
-	memoryTypeIndex, err := physical.GetVulkanPhysicalDeviceMemoryTypeIndex(&device.Physical.Capabilities, requirements.MemoryTypeBits, flags)
+func UpdateVulkanBufferOptions(options *VulkanBufferOptions, device *logical.VulkanLogicalDevice, requirements vulkan.MemoryRequirements) error {
+	memoryTypeIndex, err := physical.GetVulkanPhysicalDeviceMemoryTypeIndex(&device.Physical.Capabilities, requirements.MemoryTypeBits, options.Data.Flags)
 	if err != nil {
 		return err
 	}

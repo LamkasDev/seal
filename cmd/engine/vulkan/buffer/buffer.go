@@ -13,10 +13,10 @@ type VulkanBuffer struct {
 	Options VulkanBufferOptions
 }
 
-func NewVulkanBuffer(device *logical.VulkanLogicalDevice, size vulkan.DeviceSize, usage vulkan.BufferUsageFlags, sharingMode vulkan.SharingMode, flags vulkan.MemoryPropertyFlags) (VulkanBuffer, error) {
+func NewVulkanBuffer(device *logical.VulkanLogicalDevice, data VulkanBufferOptionsData) (VulkanBuffer, error) {
 	buffer := VulkanBuffer{
 		Device:  device,
-		Options: NewVulkanBufferOptions(size, usage, sharingMode),
+		Options: NewVulkanBufferOptions(data),
 	}
 
 	var vulkanBuffer vulkan.Buffer
@@ -30,7 +30,7 @@ func NewVulkanBuffer(device *logical.VulkanLogicalDevice, size vulkan.DeviceSize
 	var requirements vulkan.MemoryRequirements
 	vulkan.GetBufferMemoryRequirements(device.Handle, buffer.Handle, &requirements)
 	requirements.Deref()
-	if err := UpdateVulkanBufferOptions(&buffer.Options, device, requirements, flags); err != nil {
+	if err := UpdateVulkanBufferOptions(&buffer.Options, device, requirements); err != nil {
 		return buffer, err
 	}
 

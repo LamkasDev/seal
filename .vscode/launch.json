@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "cmd/engine/main.go",
+            "program": "cmd/game/main.go",
             "buildFlags": "-tags 'seal64 sealdebug'",
             "output": "build/seal64/seal_engine.exe",
             "cwd": "build/seal64",
