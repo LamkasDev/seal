@@ -27,27 +27,36 @@ func NewVulkanBuffer(device *logical.VulkanLogicalDevice, data VulkanBufferOptio
 	buffer.Handle = vulkanBuffer
 	logger.DefaultLogger.Debug("created new vulkan buffer")
 
-	var requirements vulkan.MemoryRequirements
-	vulkan.GetBufferMemoryRequirements(device.Handle, buffer.Handle, &requirements)
-	requirements.Deref()
-	if err := UpdateVulkanBufferOptions(&buffer.Options, device, requirements); err != nil {
+	if err := AllocateVulkanBuffer(&buffer); err != nil {
 		return buffer, err
+	}
+	logger.DefaultLogger.Debug("allocated vulkan buffer memory")
+
+	return buffer, nil
+}
+
+func AllocateVulkanBuffer(buffer *VulkanBuffer) error {
+	var requirements vulkan.MemoryRequirements
+	vulkan.GetBufferMemoryRequirements(buffer.Device.Handle, buffer.Handle, &requirements)
+	requirements.Deref()
+
+	if err := UpdateVulkanBufferOptions(&buffer.Options, buffer.Device, requirements); err != nil {
+		return err
 	}
 
 	var vulkanBufferMemory vulkan.DeviceMemory
-	if res := vulkan.AllocateMemory(device.Handle, &buffer.Options.AllocateInfo, nil, &vulkanBufferMemory); res != vulkan.Success {
+	if res := vulkan.AllocateMemory(buffer.Device.Handle, &buffer.Options.AllocateInfo, nil, &vulkanBufferMemory); res != vulkan.Success {
 		logger.DefaultLogger.Error(vulkan.Error(res))
-		return buffer, vulkan.Error(res)
+		return vulkan.Error(res)
 	}
 	buffer.Memory = vulkanBufferMemory
-	logger.DefaultLogger.Debug("allocated vulkan buffer memory")
 
-	if res := vulkan.BindBufferMemory(device.Handle, buffer.Handle, buffer.Memory, 0); res != vulkan.Success {
+	if res := vulkan.BindBufferMemory(buffer.Device.Handle, buffer.Handle, buffer.Memory, 0); res != vulkan.Success {
 		logger.DefaultLogger.Error(vulkan.Error(res))
-		return buffer, vulkan.Error(res)
+		return vulkan.Error(res)
 	}
 
-	return buffer, nil
+	return nil
 }
 
 func FreeVulkanBuffer(buffer *VulkanBuffer) error {

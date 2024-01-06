@@ -3,7 +3,6 @@ package texture
 import (
 	"fmt"
 
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"neilpa.me/go-stbi"
@@ -41,7 +40,7 @@ func CreateVulkanTextureWithContainer(container *VulkanTextureContainer, id stri
 		return VulkanTexture{}, err
 	}
 
-	texture, err := NewVulkanTexture(container.Device, buffer.NewVulkanTextureBufferOptions(textureImage.Pix))
+	texture, err := NewVulkanTexture(container.Device, textureImage)
 	if err != nil {
 		return texture, err
 	}

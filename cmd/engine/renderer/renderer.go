@@ -181,6 +181,12 @@ func FreeRenderer(renderer *Renderer) error {
 	if err := pipeline.FreeVulkanPipeline(&renderer.Pipeline); err != nil {
 		return err
 	}
+	if err := shader.FreeVulkanShaderContainer(&renderer.ShaderContainer); err != nil {
+		return err
+	}
+	if err := texture.FreeVulkanTextureContainer(&renderer.TextureContainer); err != nil {
+		return err
+	}
 	vulkan.DestroySurface(renderer.VulkanInstance.Handle, renderer.Surface, nil)
 	if err := window.FreeWindow(&renderer.Window); err != nil {
 		return err
