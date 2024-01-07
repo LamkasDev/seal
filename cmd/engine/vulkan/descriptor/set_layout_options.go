@@ -11,8 +11,7 @@ type VulkanDescriptorSetLayoutOptions struct {
 func NewVulkanDescriptorSetLayoutOptions() VulkanDescriptorSetLayoutOptions {
 	options := VulkanDescriptorSetLayoutOptions{
 		CreateInfo: vulkan.DescriptorSetLayoutCreateInfo{
-			SType:        vulkan.StructureTypeDescriptorSetLayoutCreateInfo,
-			BindingCount: 1,
+			SType: vulkan.StructureTypeDescriptorSetLayoutCreateInfo,
 			PBindings: []vulkan.DescriptorSetLayoutBinding{
 				{
 					Binding:         0,
@@ -20,9 +19,16 @@ func NewVulkanDescriptorSetLayoutOptions() VulkanDescriptorSetLayoutOptions {
 					DescriptorCount: 1,
 					StageFlags:      vulkan.ShaderStageFlags(vulkan.ShaderStageVertexBit),
 				},
+				{
+					Binding:         1,
+					DescriptorType:  vulkan.DescriptorTypeCombinedImageSampler,
+					DescriptorCount: 1,
+					StageFlags:      vulkan.ShaderStageFlags(vulkan.ShaderStageFragmentBit),
+				},
 			},
 		},
 	}
+	options.CreateInfo.BindingCount = uint32(len(options.CreateInfo.PBindings))
 
 	return options
 }

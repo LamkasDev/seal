@@ -18,7 +18,7 @@ type VulkanLogicalDeviceOptions struct {
 func NewVulkanLogicalDeviceOptions(device *physical.VulkanPhysicalDevice) VulkanLogicalDeviceOptions {
 	options := VulkanLogicalDeviceOptions{
 		Features: []vulkan.PhysicalDeviceFeatures{
-			{},
+			{SamplerAnisotropy: vulkan.True},
 		},
 		QueueCreateInfo: map[uint32]vulkan.DeviceQueueCreateInfo{},
 	}

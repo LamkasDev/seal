@@ -9,13 +9,13 @@ type VulkanImageViewOptions struct {
 	CreateInfo vulkan.ImageViewCreateInfo
 }
 
-func NewVulkanImageViewOptions(device *logical.VulkanLogicalDevice, image *vulkan.Image) VulkanImageViewOptions {
+func NewVulkanImageViewOptions(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format) VulkanImageViewOptions {
 	options := VulkanImageViewOptions{
 		CreateInfo: vulkan.ImageViewCreateInfo{
 			SType:    vulkan.StructureTypeImageViewCreateInfo,
 			Image:    *image,
 			ViewType: vulkan.ImageViewType2d,
-			Format:   device.Physical.Capabilities.Surface.ImageFormats[device.Physical.Capabilities.Surface.ImageFormatIndex].Format,
+			Format:   format,
 			Components: vulkan.ComponentMapping{
 				R: vulkan.ComponentSwizzleIdentity,
 				G: vulkan.ComponentSwizzleIdentity,

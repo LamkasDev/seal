@@ -12,9 +12,10 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	sealPipeline "github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/sampler"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/swapchain"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
+	sealTexture "github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/LamkasDev/seal/cmd/engine/window"
@@ -34,11 +35,12 @@ type VulkanRenderer struct {
 	Viewport viewport.VulkanViewport
 
 	ShaderContainer         shader.VulkanShaderContainer
-	TextureContainer        texture.VulkanTextureContainer
+	TextureContainer        sealTexture.VulkanTextureContainer
 	MeshContainer           mesh.VulkanMeshContainer
 	DescriptorPoolContainer descriptor.VulkanDescriptorPoolContainer
 	BufferContainer         sealBuffer.VulkanBufferContainer
 
+	Sampler           sampler.VulkanSampler
 	RenderPass        pass.VulkanRenderPass
 	RendererSyncer    VulkanRendererSyncer
 	RendererCommander VulkanRendererCommander
@@ -85,7 +87,7 @@ func NewRenderer() (VulkanRenderer, error) {
 	renderer.Viewport = viewport.NewVulkanViewport(renderer.Window.Data.Extent)
 
 	progress.AdvanceLoading()
-	if renderer.TextureContainer, err = texture.NewVulkanTextureContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
+	if renderer.TextureContainer, err = sealTexture.NewVulkanTextureContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
 		return renderer, err
 	}
 	progress.AdvanceLoading()
@@ -105,6 +107,10 @@ func NewRenderer() (VulkanRenderer, error) {
 		return renderer, err
 	}
 
+	progress.AdvanceLoading()
+	if renderer.Sampler, err = sampler.NewVulkanSampler(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
+		return renderer, err
+	}
 	progress.AdvanceLoading()
 	if renderer.RenderPass, err = pass.NewVulkanRenderPass(&renderer.VulkanInstance.Devices.LogicalDevice, renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormats[renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormatIndex].Format); err != nil {
 		return renderer, err
@@ -249,6 +255,25 @@ func PushVulkanRendererBuffers(renderer *VulkanRenderer) error {
 		return err
 	}
 
+	for _, texture := range renderer.TextureContainer.Textures {
+		ApplyVulkanTextureBarrier(renderer, &texture, vulkan.ImageLayoutUndefined, vulkan.ImageLayoutTransferDstOptimal)
+		imageCopy := vulkan.BufferImageCopy{
+			BufferOffset:      0,
+			BufferRowLength:   0,
+			BufferImageHeight: 0,
+			ImageSubresource: vulkan.ImageSubresourceLayers{
+				AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+				MipLevel:       0,
+				BaseArrayLayer: 0,
+				LayerCount:     1,
+			},
+			ImageOffset: vulkan.Offset3D{X: 0, Y: 0, Z: 0},
+			ImageExtent: texture.Image.Options.CreateInfo.Extent,
+		}
+		vulkan.CmdCopyBufferToImage(renderer.RendererCommander.StagingBuffer.Handle, texture.Buffer.StagingBuffer.Handle, texture.Image.Handle, vulkan.ImageLayoutTransferDstOptimal, 1, []vulkan.BufferImageCopy{imageCopy})
+		ApplyVulkanTextureBarrier(renderer, &texture, vulkan.ImageLayoutTransferDstOptimal, vulkan.ImageLayoutShaderReadOnlyOptimal)
+	}
+
 	for _, mesh := range renderer.MeshContainer.Meshes {
 		bufferCopy := vulkan.BufferCopy{
 			Size: mesh.Buffer.StagingBuffer.Options.CreateInfo.Size,
@@ -277,6 +302,41 @@ func PushVulkanRendererBuffers(renderer *VulkanRenderer) error {
 	return nil
 }
 
+func ApplyVulkanTextureBarrier(renderer *VulkanRenderer, texture *sealTexture.VulkanTexture, oldLayout vulkan.ImageLayout, newLayout vulkan.ImageLayout) {
+	var srcStage, dstStage vulkan.PipelineStageFlags
+	barrier := vulkan.ImageMemoryBarrier{
+		SType:               vulkan.StructureTypeImageMemoryBarrier,
+		OldLayout:           oldLayout,
+		NewLayout:           newLayout,
+		SrcQueueFamilyIndex: vulkan.QueueFamilyIgnored,
+		DstQueueFamilyIndex: vulkan.QueueFamilyIgnored,
+		Image:               texture.Image.Handle,
+		SubresourceRange: vulkan.ImageSubresourceRange{
+			AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+			BaseMipLevel:   0,
+			LevelCount:     1,
+			BaseArrayLayer: 0,
+			LayerCount:     1,
+		},
+	}
+
+	if oldLayout == vulkan.ImageLayoutUndefined && newLayout == vulkan.ImageLayoutTransferDstOptimal {
+		barrier.SrcAccessMask = 0
+		barrier.DstAccessMask = vulkan.AccessFlags(vulkan.AccessTransferWriteBit)
+		srcStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTopOfPipeBit)
+		dstStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTransferBit)
+	} else if oldLayout == vulkan.ImageLayoutTransferDstOptimal && newLayout == vulkan.ImageLayoutShaderReadOnlyOptimal {
+		barrier.SrcAccessMask = vulkan.AccessFlags(vulkan.AccessTransferWriteBit)
+		barrier.DstAccessMask = vulkan.AccessFlags(vulkan.AccessShaderReadBit)
+		srcStage = vulkan.PipelineStageFlags(vulkan.PipelineStageTransferBit)
+		dstStage = vulkan.PipelineStageFlags(vulkan.PipelineStageFragmentShaderBit)
+	} else {
+		panic("what")
+	}
+
+	vulkan.CmdPipelineBarrier(renderer.RendererCommander.StagingBuffer.Handle, srcStage, dstStage, 0, 0, nil, 0, nil, 1, []vulkan.ImageMemoryBarrier{barrier})
+}
+
 func FreeRenderer(renderer *VulkanRenderer) error {
 	if err := swapchain.FreeVulkanSwapchain(&renderer.Swapchain); err != nil {
 		return err
@@ -288,6 +348,9 @@ func FreeRenderer(renderer *VulkanRenderer) error {
 		return err
 	}
 	if err := pass.FreeVulkanRenderPass(&renderer.RenderPass); err != nil {
+		return err
+	}
+	if err := sampler.FreeVulkanSampler(&renderer.Sampler); err != nil {
 		return err
 	}
 	if err := mesh.FreeVulkanMeshContainer(&renderer.MeshContainer); err != nil {
@@ -310,7 +373,7 @@ func FreeRenderer(renderer *VulkanRenderer) error {
 			return err
 		}
 	}
-	if err := texture.FreeVulkanTextureContainer(&renderer.TextureContainer); err != nil {
+	if err := sealTexture.FreeVulkanTextureContainer(&renderer.TextureContainer); err != nil {
 		return err
 	}
 	vulkan.DestroySurface(renderer.VulkanInstance.Handle, renderer.Surface, nil)

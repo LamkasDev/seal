@@ -46,7 +46,7 @@ func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, window *sealWindow.
 	}
 
 	for i := 0; i < len(swapchain.Images); i++ {
-		imageview, err := image.NewVulkanImageView(device, &swapchain.Images[i])
+		imageview, err := image.NewVulkanImageView(swapchain.Device, &swapchain.Images[i], swapchain.Device.Physical.Capabilities.Surface.ImageFormats[swapchain.Device.Physical.Capabilities.Surface.ImageFormatIndex].Format)
 		if err != nil {
 			return swapchain, err
 		}

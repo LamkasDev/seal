@@ -12,10 +12,10 @@ type VulkanImageView struct {
 	Options VulkanImageViewOptions
 }
 
-func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *vulkan.Image) (VulkanImageView, error) {
+func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format) (VulkanImageView, error) {
 	imageView := VulkanImageView{
 		Device:  device,
-		Options: NewVulkanImageViewOptions(device, image),
+		Options: NewVulkanImageViewOptions(device, image, format),
 	}
 
 	var vulkanImageView vulkan.ImageView

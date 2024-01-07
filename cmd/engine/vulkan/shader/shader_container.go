@@ -25,7 +25,9 @@ func NewVulkanShaderContainer(device *logical.VulkanLogicalDevice) (VulkanShader
 		Device:  device,
 		Shaders: map[string]VulkanShader{},
 	}
+
 	if err := os.MkdirAll("../shaders", 0755); err != nil {
+		logger.DefaultLogger.Error(err)
 		return container, err
 	}
 	for _, shader := range DefaultShaders {
