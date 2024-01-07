@@ -5,14 +5,14 @@ import (
 
 	"github.com/LamkasDev/seal/cmd/engine/input"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
-	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	"github.com/LamkasDev/seal/cmd/engine/scene"
 	sealTime "github.com/LamkasDev/seal/cmd/engine/time"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/renderer"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type Engine struct {
-	Renderer renderer.Renderer
+	Renderer renderer.VulkanRenderer
 	Scene    scene.Scene
 	Input    input.Input
 }

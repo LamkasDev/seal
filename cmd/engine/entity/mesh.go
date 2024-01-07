@@ -2,11 +2,13 @@ package entity
 
 import (
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
-	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	"github.com/LamkasDev/seal/cmd/engine/time"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/descriptor"
 	sealMesh "github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/renderer"
+	sealRenderer "github.com/LamkasDev/seal/cmd/engine/vulkan/renderer"
+	sealShader "github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/transform_buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
 	sealUniform "github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
@@ -32,14 +34,14 @@ func NewEntityComponentMesh(entity *Entity, mesh *sealMesh.VulkanMesh) (EntityCo
 		Update: func(component *EntityComponent) error { return nil },
 	}
 	data := component.Data.(EntityComponentMeshData)
-	if data.Buffer, err = transform_buffer.NewVulkanTransformBuffer(&renderer.RendererInstance.Pipeline, transform_buffer.NewVulkanTransformBufferOptions(uniform.NewVulkanUniform(renderer.RendererInstance.Window.Data.Extent, renderer.RendererInstance.Pipeline.Camera.Position, component.Entity.Transform.Position, component.Entity.Transform.Rotation))); err != nil {
+	if data.Buffer, err = transform_buffer.NewVulkanTransformBuffer(sealRenderer.RendererInstance, transform_buffer.NewVulkanTransformBufferOptions(uniform.NewVulkanUniform3D(sealRenderer.RendererInstance.Window.Data.Extent, sealRenderer.RendererInstance.Camera.Position, component.Entity.Transform.Position, component.Entity.Transform.Rotation))); err != nil {
 		return component, err
 	}
-	if data.DescriptorPool, err = descriptor.CreateVulkanDescriptorPoolWithContainer(&renderer.RendererInstance.Pipeline.DescriptorPoolContainer); err != nil {
+	if data.DescriptorPool, err = descriptor.CreateVulkanDescriptorPoolWithContainer(&sealRenderer.RendererInstance.DescriptorPoolContainer); err != nil {
 		return component, err
 	}
 	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
-		if data.DescriptorSets[i], err = descriptor.NewVulkanDescriptorSet(mesh.Device, &data.DescriptorPool, &renderer.RendererInstance.Pipeline.Layout.DescriptorSetLayout); err != nil {
+		if data.DescriptorSets[i], err = descriptor.NewVulkanDescriptorSet(mesh.Device, &data.DescriptorPool, &sealRenderer.RendererInstance.Layout.DescriptorSetLayout); err != nil {
 			return component, err
 		}
 	}
@@ -82,18 +84,22 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 
 func RenderEntityComponentMesh(component *EntityComponent) error {
 	data := component.Data.(EntityComponentMeshData)
-	data.Buffer.Options.Uniforms[renderer.RendererInstance.Pipeline.CurrentFrame] = sealUniform.NewVulkanUniform(renderer.RendererInstance.Window.Data.Extent, renderer.RendererInstance.Pipeline.Camera.Position, component.Entity.Transform.Position, component.Entity.Transform.Rotation)
+	data.Buffer.Options.Uniforms[sealRenderer.RendererInstance.CurrentFrame] = sealUniform.NewVulkanUniform3D(sealRenderer.RendererInstance.Window.Data.Extent, sealRenderer.RendererInstance.Camera.Position, component.Entity.Transform.Position, component.Entity.Transform.Rotation)
 	component.Data = data
 
-	component.Entity.Transform.Rotation += time.DeltaTime * 100
-	if err := UpdateEntityComponentMesh(component, renderer.RendererInstance.Pipeline.CurrentFrame, renderer.RendererInstance.Pipeline.CurrentFrame); err != nil {
-		return err
+	if data.Mesh.Shader == sealShader.SHADER_BASIC {
+		component.Entity.Transform.Rotation += time.DeltaTime * 100
+		if err := UpdateEntityComponentMesh(component, sealRenderer.RendererInstance.CurrentFrame, sealRenderer.RendererInstance.CurrentFrame); err != nil {
+			return err
+		}
 	}
 
-	vulkan.CmdBindDescriptorSets(renderer.RendererInstance.Pipeline.CommandBuffer.Handle, vulkan.PipelineBindPointGraphics, renderer.RendererInstance.Pipeline.Layout.Handle, 0, 1, []vulkan.DescriptorSet{data.DescriptorSets[renderer.RendererInstance.Pipeline.CurrentFrame].Handle}, 0, nil)
-	vulkan.CmdBindVertexBuffers(renderer.RendererInstance.Pipeline.CommandBuffer.Handle, 0, 1, []vulkan.Buffer{data.Mesh.Buffer.DeviceBuffer.Handle}, []vulkan.DeviceSize{buffer.GetVulkanMeshBufferOptionsVerticesOffset(&data.Mesh.Buffer.Options)})
-	vulkan.CmdBindIndexBuffer(renderer.RendererInstance.Pipeline.CommandBuffer.Handle, data.Mesh.Buffer.DeviceBuffer.Handle, buffer.GetVulkanMeshBufferOptionsIndicesOffset(&data.Mesh.Buffer.Options), vulkan.IndexTypeUint16)
-	vulkan.CmdDrawIndexed(renderer.RendererInstance.Pipeline.CommandBuffer.Handle, uint32(len(data.Mesh.Buffer.Options.Indices)), 1, 0, 0, 0)
+	renderer.RecordVulkanRendererCommanderCommands(&renderer.RendererInstance.RendererCommander, data.Mesh.Shader, func() {
+		vulkan.CmdBindDescriptorSets(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, vulkan.PipelineBindPointGraphics, sealRenderer.RendererInstance.Layout.Handle, 0, 1, []vulkan.DescriptorSet{data.DescriptorSets[sealRenderer.RendererInstance.CurrentFrame].Handle}, 0, nil)
+		vulkan.CmdBindVertexBuffers(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, 0, 1, []vulkan.Buffer{data.Mesh.Buffer.DeviceBuffer.Handle}, []vulkan.DeviceSize{buffer.GetVulkanMeshBufferOptionsVerticesOffset(&data.Mesh.Buffer.Options)})
+		vulkan.CmdBindIndexBuffer(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, data.Mesh.Buffer.DeviceBuffer.Handle, buffer.GetVulkanMeshBufferOptionsIndicesOffset(&data.Mesh.Buffer.Options), vulkan.IndexTypeUint16)
+		vulkan.CmdDrawIndexed(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, uint32(len(data.Mesh.Buffer.Options.Indices)), 1, 0, 0, 0)
+	})
 
 	return nil
 }

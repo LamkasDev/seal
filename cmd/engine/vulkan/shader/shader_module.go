@@ -37,7 +37,7 @@ func NewVulkanShaderModule(device *logical.VulkanLogicalDevice, id string, stage
 	shaderModule := VulkanShaderModule{}
 
 	source := fmt.Sprintf("../../resources/shaders/%s", id)
-	target := fmt.Sprintf("../../resources/shaders/%s.spv", id)
+	target := fmt.Sprintf("../shaders/%s.spv", id)
 	if arch.SealDebug {
 		if err = CompileVulkanShaderModule(source, target); err != nil {
 			return shaderModule, err

@@ -3,11 +3,10 @@ package pipeline
 import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	sealShader "github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/vulkan-go/vulkan"
-	"golang.org/x/exp/maps"
 )
 
 type VulkanPipelineOptions struct {
@@ -22,7 +21,7 @@ type VulkanPipelineOptions struct {
 	CreateInfo                vulkan.GraphicsPipelineCreateInfo
 }
 
-func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, container *shader.VulkanShaderContainer) VulkanPipelineOptions {
+func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, viewport *viewport.VulkanViewport, pass *pass.VulkanRenderPass, shader *sealShader.VulkanShader) VulkanPipelineOptions {
 	options := VulkanPipelineOptions{
 		DynamicState: vulkan.PipelineDynamicStateCreateInfo{
 			SType:             vulkan.StructureTypePipelineDynamicStateCreateInfo,
@@ -69,18 +68,12 @@ func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, view
 		PAttachments:    []vulkan.PipelineColorBlendAttachmentState{options.ColorBlendAttachmentState},
 	}
 
-	shaders := maps.Values(container.Shaders)
-	stagesCount := len(shaders) * 2
-	stages := make([]vulkan.PipelineShaderStageCreateInfo, stagesCount)
-	for i := 0; i < stagesCount; i += 2 {
-		stages[i] = shaders[i].Vertex.Stage
-		stages[i+1] = shaders[i].Fragment.Stage
-	}
-
 	options.CreateInfo = vulkan.GraphicsPipelineCreateInfo{
-		SType:               vulkan.StructureTypeGraphicsPipelineCreateInfo,
-		StageCount:          uint32(stagesCount),
-		PStages:             stages,
+		SType:      vulkan.StructureTypeGraphicsPipelineCreateInfo,
+		StageCount: 2,
+		PStages: []vulkan.PipelineShaderStageCreateInfo{
+			shader.Vertex.Stage, shader.Fragment.Stage,
+		},
 		PVertexInputState:   &options.VertexInputStateOptions.CreateInfo,
 		PInputAssemblyState: &options.InputAssemblyState,
 		PDynamicState:       &options.DynamicState,

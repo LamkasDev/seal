@@ -3,8 +3,8 @@ package scene
 import (
 	"github.com/LamkasDev/seal/cmd/engine/entity"
 	sealEntity "github.com/LamkasDev/seal/cmd/engine/entity"
-	"github.com/LamkasDev/seal/cmd/engine/renderer"
 	sealMesh "github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/renderer"
 	sealTransform "github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 )
 

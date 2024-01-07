@@ -1,4 +1,4 @@
-package pipeline
+package renderer
 
 import (
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
@@ -8,16 +8,16 @@ import (
 	"github.com/vulkan-go/vulkan"
 )
 
-type VulkanPipelineSyncer struct {
+type VulkanRendererSyncer struct {
 	Device                   *logical.VulkanLogicalDevice
 	ImageAvailableSemaphores []semaphore.VulkanSemaphore
 	RenderFinishedSemaphores []semaphore.VulkanSemaphore
 	InFlightFences           []fence.VulkanFence
 }
 
-func NewVulkanPipelineSyncer(device *logical.VulkanLogicalDevice) (VulkanPipelineSyncer, error) {
+func NewVulkanRendererSyncer(device *logical.VulkanLogicalDevice) (VulkanRendererSyncer, error) {
 	var err error
-	syncer := VulkanPipelineSyncer{
+	syncer := VulkanRendererSyncer{
 		Device:                   device,
 		ImageAvailableSemaphores: make([]semaphore.VulkanSemaphore, commonPipeline.MaxFramesInFlight),
 		RenderFinishedSemaphores: make([]semaphore.VulkanSemaphore, commonPipeline.MaxFramesInFlight),
@@ -39,7 +39,7 @@ func NewVulkanPipelineSyncer(device *logical.VulkanLogicalDevice) (VulkanPipelin
 	return syncer, nil
 }
 
-func FreeVulkanPipelineSyncer(syncer *VulkanPipelineSyncer) error {
+func FreeVulkanRendererSyncer(syncer *VulkanRendererSyncer) error {
 	for i := 0; i < commonPipeline.MaxFramesInFlight; i++ {
 		if err := fence.FreeVulkanFence(&syncer.InFlightFences[i]); err != nil {
 			return err
