@@ -12,10 +12,14 @@ type VulkanImageView struct {
 	Options VulkanImageViewOptions
 }
 
-func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format) (VulkanImageView, error) {
+func NewVulkanImageView(device *logical.VulkanLogicalDevice, image *VulkanImage, aspectMask vulkan.ImageAspectFlags) (VulkanImageView, error) {
+	return NewVulkanImageViewRaw(device, &image.Handle, image.Options.CreateInfo.Format, aspectMask)
+}
+
+func NewVulkanImageViewRaw(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format, aspectMask vulkan.ImageAspectFlags) (VulkanImageView, error) {
 	imageView := VulkanImageView{
 		Device:  device,
-		Options: NewVulkanImageViewOptions(device, image, format),
+		Options: NewVulkanImageViewOptionsRaw(device, image, format, aspectMask),
 	}
 
 	var vulkanImageView vulkan.ImageView

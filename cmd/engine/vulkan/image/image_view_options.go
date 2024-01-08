@@ -9,7 +9,11 @@ type VulkanImageViewOptions struct {
 	CreateInfo vulkan.ImageViewCreateInfo
 }
 
-func NewVulkanImageViewOptions(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format) VulkanImageViewOptions {
+func NewVulkanImageViewOptions(device *logical.VulkanLogicalDevice, image *VulkanImage, aspectMask vulkan.ImageAspectFlags) VulkanImageViewOptions {
+	return NewVulkanImageViewOptionsRaw(device, &image.Handle, image.Options.CreateInfo.Format, aspectMask)
+}
+
+func NewVulkanImageViewOptionsRaw(device *logical.VulkanLogicalDevice, image *vulkan.Image, format vulkan.Format, aspectMask vulkan.ImageAspectFlags) VulkanImageViewOptions {
 	options := VulkanImageViewOptions{
 		CreateInfo: vulkan.ImageViewCreateInfo{
 			SType:    vulkan.StructureTypeImageViewCreateInfo,
@@ -23,7 +27,7 @@ func NewVulkanImageViewOptions(device *logical.VulkanLogicalDevice, image *vulka
 				A: vulkan.ComponentSwizzleIdentity,
 			},
 			SubresourceRange: vulkan.ImageSubresourceRange{
-				AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+				AspectMask:     aspectMask,
 				BaseMipLevel:   0,
 				LevelCount:     1,
 				BaseArrayLayer: 0,

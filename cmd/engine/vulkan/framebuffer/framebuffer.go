@@ -16,12 +16,12 @@ type VulkanFramebuffer struct {
 	Options   VulkanFramebufferOptions
 }
 
-func NewVulkanFramebuffer(device *logical.VulkanLogicalDevice, pass *sealPass.VulkanRenderPass, imageview *image.VulkanImageView) (VulkanFramebuffer, error) {
+func NewVulkanFramebuffer(device *logical.VulkanLogicalDevice, pass *sealPass.VulkanRenderPass, imageView *image.VulkanImageView, depthImageView *image.VulkanImageView) (VulkanFramebuffer, error) {
 	framebuffer := VulkanFramebuffer{
 		Device:    device,
 		Pass:      pass,
-		Imageview: imageview,
-		Options:   NewVulkanFramebufferOptions(device, pass, imageview),
+		Imageview: imageView,
+		Options:   NewVulkanFramebufferOptions(device, pass, imageView, depthImageView),
 	}
 
 	var vulkanFramebuffer vulkan.Framebuffer

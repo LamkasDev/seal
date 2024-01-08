@@ -17,6 +17,7 @@ type VulkanPipelineOptions struct {
 	RasterizationState        vulkan.PipelineRasterizationStateCreateInfo
 	MultisampleState          vulkan.PipelineMultisampleStateCreateInfo
 	ColorBlendAttachmentState vulkan.PipelineColorBlendAttachmentState
+	DepthStencilState         vulkan.PipelineDepthStencilStateCreateInfo
 	ColorBlendState           vulkan.PipelineColorBlendStateCreateInfo
 	CreateInfo                vulkan.GraphicsPipelineCreateInfo
 }
@@ -60,6 +61,14 @@ func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, view
 			ColorWriteMask: vulkan.ColorComponentFlags(vulkan.ColorComponentRBit | vulkan.ColorComponentGBit | vulkan.ColorComponentBBit | vulkan.ColorComponentABit),
 			BlendEnable:    vulkan.Bool32(0),
 		},
+		DepthStencilState: vulkan.PipelineDepthStencilStateCreateInfo{
+			SType:                 vulkan.StructureTypePipelineDepthStencilStateCreateInfo,
+			DepthTestEnable:       vulkan.True,
+			DepthWriteEnable:      vulkan.True,
+			DepthCompareOp:        vulkan.CompareOpLess,
+			DepthBoundsTestEnable: vulkan.False,
+			StencilTestEnable:     vulkan.False,
+		},
 	}
 	options.ColorBlendState = vulkan.PipelineColorBlendStateCreateInfo{
 		SType:           vulkan.StructureTypePipelineColorBlendStateCreateInfo,
@@ -81,6 +90,7 @@ func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, view
 		PRasterizationState: &options.RasterizationState,
 		PMultisampleState:   &options.MultisampleState,
 		PColorBlendState:    &options.ColorBlendState,
+		PDepthStencilState:  &options.DepthStencilState,
 		Layout:              layout.Handle,
 		RenderPass:          pass.Handle,
 		Subpass:             0,

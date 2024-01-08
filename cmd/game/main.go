@@ -35,7 +35,7 @@ func main() {
 	if err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_BASIC], sealTransform.VulkanTransform{Position: glm.Vec3{0, 0, 0}}); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	if err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_UI], sealTransform.VulkanTransform{Position: glm.Vec3{-1, -1, 0}}); err != nil {
+	if err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_UI], sealTransform.VulkanTransform{Position: glm.Vec3{0, 0, 0}}); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 

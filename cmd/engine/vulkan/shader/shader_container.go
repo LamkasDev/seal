@@ -8,11 +8,9 @@ import (
 )
 
 const SHADER_BASIC = "basic"
-const SHADER_UI = "ui"
 
 var DefaultShaders = []string{
 	SHADER_BASIC,
-	SHADER_UI,
 }
 
 type VulkanShaderContainer struct {

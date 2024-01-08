@@ -9,9 +9,11 @@ import (
 )
 
 const TEXTURE_BASIC = "basic"
+const TEXTURE_SKY = "sky"
 
 var DefaultTextures = []string{
 	TEXTURE_BASIC,
+	TEXTURE_SKY,
 }
 
 type VulkanTextureContainer struct {

@@ -11,16 +11,20 @@ import (
 )
 
 type VulkanSwapchain struct {
-	Handle       vulkan.Swapchain
-	Device       *logical.VulkanLogicalDevice
-	Window       *sealWindow.Window
-	RenderPass   *vulkan.RenderPass
-	Options      VulkanSwapchainOptions
-	Images       []vulkan.Image
-	Framebuffers []sealFramebuffer.VulkanFramebuffer
+	Handle     vulkan.Swapchain
+	Device     *logical.VulkanLogicalDevice
+	Window     *sealWindow.Window
+	RenderPass *vulkan.RenderPass
+	Options    VulkanSwapchainOptions
+
+	Images         []vulkan.Image
+	DepthImage     image.VulkanImage
+	DepthImageView image.VulkanImageView
+	Framebuffers   []sealFramebuffer.VulkanFramebuffer
 }
 
 func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, window *sealWindow.Window, renderPass *pass.VulkanRenderPass, surface *vulkan.Surface, old *VulkanSwapchain) (VulkanSwapchain, error) {
+	var err error
 	swapchain := VulkanSwapchain{
 		Device:       device,
 		Window:       window,
@@ -45,12 +49,19 @@ func NewVulkanSwapchain(device *logical.VulkanLogicalDevice, window *sealWindow.
 		logger.DefaultLogger.Error(vulkan.Error(res))
 	}
 
+	if swapchain.DepthImage, err = image.NewVulkanImage(device, vulkan.FormatD32Sfloat, window.Data.Extent.Width, window.Data.Extent.Height, vulkan.ImageUsageFlags(vulkan.ImageUsageDepthStencilAttachmentBit)); err != nil {
+		return swapchain, err
+	}
+	if swapchain.DepthImageView, err = image.NewVulkanImageView(device, &swapchain.DepthImage, vulkan.ImageAspectFlags(vulkan.ImageAspectDepthBit)); err != nil {
+		return swapchain, err
+	}
+
 	for i := 0; i < len(swapchain.Images); i++ {
-		imageview, err := image.NewVulkanImageView(swapchain.Device, &swapchain.Images[i], swapchain.Device.Physical.Capabilities.Surface.ImageFormats[swapchain.Device.Physical.Capabilities.Surface.ImageFormatIndex].Format)
+		imageView, err := image.NewVulkanImageViewRaw(swapchain.Device, &swapchain.Images[i], swapchain.Device.Physical.Capabilities.Surface.ImageFormats[swapchain.Device.Physical.Capabilities.Surface.ImageFormatIndex].Format, vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit))
 		if err != nil {
 			return swapchain, err
 		}
-		framebuffer, err := sealFramebuffer.NewVulkanFramebuffer(device, renderPass, &imageview)
+		framebuffer, err := sealFramebuffer.NewVulkanFramebuffer(device, renderPass, &imageView, &swapchain.DepthImageView)
 		if err != nil {
 			return swapchain, err
 		}
@@ -66,6 +77,12 @@ func FreeVulkanSwapchain(swapchain *VulkanSwapchain) error {
 		if err := sealFramebuffer.FreeVulkanFramebuffer(&framebuffer); err != nil {
 			return err
 		}
+	}
+	if err := image.FreeVulkanImageView(&swapchain.DepthImageView); err != nil {
+		return err
+	}
+	if err := image.FreeVulkanImage(&swapchain.DepthImage); err != nil {
+		return err
 	}
 	vulkan.DestroySwapchain(swapchain.Device.Handle, swapchain.Handle, nil)
 

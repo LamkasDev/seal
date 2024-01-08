@@ -25,10 +25,10 @@ func NewVulkanTexture(device *logical.VulkanLogicalDevice, source *image.RGBA) (
 		Device: device,
 	}
 
-	if texture.Image, err = sealImage.NewVulkanImage(device, uint32(source.Rect.Dx()), uint32(source.Rect.Dy())); err != nil {
+	if texture.Image, err = sealImage.NewVulkanImage(device, vulkan.FormatR8g8b8a8Srgb, uint32(source.Rect.Dx()), uint32(source.Rect.Dy()), vulkan.ImageUsageFlags(vulkan.ImageUsageTransferDstBit|vulkan.ImageUsageSampledBit)); err != nil {
 		return texture, err
 	}
-	if texture.ImageView, err = sealImage.NewVulkanImageView(device, &texture.Image.Handle, vulkan.FormatR8g8b8a8Srgb); err != nil {
+	if texture.ImageView, err = sealImage.NewVulkanImageView(device, &texture.Image, vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit)); err != nil {
 		return texture, err
 	}
 	if texture.Buffer, err = buffer.NewVulkanTextureBuffer(device, source, &texture.Image); err != nil {

@@ -11,7 +11,7 @@ type VulkanImageOptions struct {
 	AllocateInfo vulkan.MemoryAllocateInfo
 }
 
-func NewVulkanImageOptions(w uint32, h uint32) VulkanImageOptions {
+func NewVulkanImageOptions(format vulkan.Format, w uint32, h uint32, usage vulkan.ImageUsageFlags) VulkanImageOptions {
 	options := VulkanImageOptions{
 		CreateInfo: vulkan.ImageCreateInfo{
 			SType:     vulkan.StructureTypeImageCreateInfo,
@@ -23,10 +23,10 @@ func NewVulkanImageOptions(w uint32, h uint32) VulkanImageOptions {
 			},
 			MipLevels:     1,
 			ArrayLayers:   1,
-			Format:        vulkan.FormatR8g8b8a8Srgb,
+			Format:        format,
 			Tiling:        vulkan.ImageTilingOptimal,
 			InitialLayout: vulkan.ImageLayoutUndefined,
-			Usage:         vulkan.ImageUsageFlags(vulkan.ImageUsageTransferDstBit | vulkan.ImageUsageSampledBit),
+			Usage:         usage,
 			SharingMode:   vulkan.SharingModeExclusive,
 			Samples:       vulkan.SampleCount1Bit,
 		},

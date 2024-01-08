@@ -1,31 +1,40 @@
 package mesh
 
 import (
+	"fmt"
+
 	"github.com/EngoEngine/glm"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	sealModel "github.com/LamkasDev/seal/cmd/engine/vulkan/model"
 	sealShader "github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/texture"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/uniform"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/vertex"
 	"github.com/LamkasDev/seal/cmd/logger"
 )
 
 type VulkanMeshTemplate struct {
-	Id     string
-	Shader string
+	Id      string
+	Mesh    string
+	Shader  string
+	Texture string
 }
 
 const MESH_BASIC = "basic"
 const MESH_UI = "ui"
 
 var DefaultMeshes = []VulkanMeshTemplate{
-	VulkanMeshTemplate{
-		Id:     MESH_BASIC,
-		Shader: sealShader.SHADER_BASIC,
+	{
+		Id:      MESH_BASIC,
+		Mesh:    MESH_BASIC,
+		Shader:  sealShader.SHADER_BASIC,
+		Texture: texture.TEXTURE_BASIC,
 	},
-	VulkanMeshTemplate{
-		Id:     MESH_UI,
-		Shader: sealShader.SHADER_UI,
+	{
+		Id:      MESH_UI,
+		Mesh:    MESH_BASIC,
+		Shader:  sealShader.SHADER_BASIC,
+		Texture: texture.TEXTURE_SKY,
 	},
 }
 
@@ -40,7 +49,8 @@ func NewVulkanMeshContainer(device *logical.VulkanLogicalDevice) (VulkanMeshCont
 		Meshes: map[string]*VulkanMesh{},
 	}
 	for _, template := range DefaultMeshes {
-		if _, err := CreateVulkanMeshWithContainer(&container, template.Id, template.Shader, buffer.NewVulkanMeshBufferOptions(vertex.DefaultVertices, vertex.DefaultVerticesIndex, uniform.NewVulkanUniform3D(device.Physical.Window.Data.Extent, glm.Vec3{2, 2, 2}, glm.Vec3{0, 0, 0}, 0))); err != nil {
+		model := sealModel.ConvertModel(sealModel.NewModel(fmt.Sprintf("../../resources/models/%s.obj", template.Mesh)))
+		if _, err := CreateVulkanMeshWithContainer(&container, template.Id, template.Shader, template.Texture, buffer.NewVulkanMeshBufferOptions(model.Vertices, model.Indices, uniform.NewVulkanUniform3D(device.Physical.Window.Data.Extent, glm.Vec3{2, 2, 2}, glm.Vec3{0, 0, 0}, 0))); err != nil {
 			return container, err
 		}
 	}
@@ -49,8 +59,8 @@ func NewVulkanMeshContainer(device *logical.VulkanLogicalDevice) (VulkanMeshCont
 	return container, nil
 }
 
-func CreateVulkanMeshWithContainer(container *VulkanMeshContainer, id string, shader string, options buffer.VulkanMeshBufferOptions) (VulkanMesh, error) {
-	mesh, err := NewVulkanMesh(container.Device, shader, options)
+func CreateVulkanMeshWithContainer(container *VulkanMeshContainer, id string, shader string, texture string, options buffer.VulkanMeshBufferOptions) (VulkanMesh, error) {
+	mesh, err := NewVulkanMesh(container.Device, id, shader, texture, options)
 	if err != nil {
 		return mesh, err
 	}

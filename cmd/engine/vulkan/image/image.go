@@ -13,10 +13,10 @@ type VulkanImage struct {
 	Options      VulkanImageOptions
 }
 
-func NewVulkanImage(device *logical.VulkanLogicalDevice, w uint32, h uint32) (VulkanImage, error) {
+func NewVulkanImage(device *logical.VulkanLogicalDevice, format vulkan.Format, w uint32, h uint32, usage vulkan.ImageUsageFlags) (VulkanImage, error) {
 	image := VulkanImage{
 		Device:  device,
-		Options: NewVulkanImageOptions(w, h),
+		Options: NewVulkanImageOptions(format, w, h, usage),
 	}
 
 	var vulkanImage vulkan.Image
