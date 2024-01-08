@@ -18,28 +18,22 @@ const VulkanUniformModelOffset = unsafe.Offsetof(VulkanUniform{}.Model)
 const VulkanUniformViewOffset = unsafe.Offsetof(VulkanUniform{}.View)
 const VulkanUniformProjectionOffset = unsafe.Offsetof(VulkanUniform{}.Projection)
 
-func NewVulkanUniform3D(extent vulkan.Extent2D, camera glm.Vec3, position glm.Vec3, rotation float32) VulkanUniform {
+func NewVulkanUniform3D(extent vulkan.Extent2D, camera glm.Vec3, position glm.Vec3, rotation glm.Vec3) VulkanUniform {
 	uniform := VulkanUniform{
-		Model:      glm.Translate3D(position.X(), position.Y(), position.Z()),
 		View:       glm.Translate3D(-camera.X(), -camera.Y(), -camera.Z()),
-		Projection: glm.Perspective(glm.DegToRad(60), float32(extent.Width)/float32(extent.Height), 0.1, 10),
+		Projection: glm.Perspective(glm.DegToRad(60), float32(extent.Width)/float32(extent.Height), 0.1, 100),
 	}
-	rotationMat := glm.HomogRotate3DY(glm.DegToRad(rotation))
-	uniform.Model = rotationMat.Mul4(&uniform.Model)
 	uniform.Projection[5] *= -1
 
-	return uniform
-}
-
-func NewVulkanUniform2D(extent vulkan.Extent2D, position glm.Vec2, rotation float32) VulkanUniform {
-	uniform := VulkanUniform{
-		Model:      glm.Translate3D(position.X(), position.Y(), 0),
-		View:       glm.Translate3D(0, 0, 0),
-		Projection: glm.Perspective(glm.DegToRad(60), float32(extent.Width)/float32(extent.Height), 0.1, 10),
-	}
-	rotationMat := glm.HomogRotate3DY(glm.DegToRad(rotation))
-	uniform.Model = rotationMat.Mul4(&uniform.Model)
-	uniform.Projection[5] *= -1
+	translationMat := glm.Translate3D(position.X(), position.Y(), position.Z())
+	rotationMat := glm.Ident4()
+	currentRotMat := glm.HomogRotate3DX(glm.DegToRad(rotation.X()))
+	rotationMat = currentRotMat.Mul4(&rotationMat)
+	currentRotMat = glm.HomogRotate3DY(glm.DegToRad(rotation.Y()))
+	rotationMat = currentRotMat.Mul4(&rotationMat)
+	currentRotMat = glm.HomogRotate3DZ(glm.DegToRad(rotation.Z()))
+	rotationMat = currentRotMat.Mul4(&rotationMat)
+	uniform.Model = translationMat.Mul4(&rotationMat)
 
 	return uniform
 }

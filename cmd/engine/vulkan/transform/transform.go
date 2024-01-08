@@ -6,5 +6,5 @@ import (
 
 type VulkanTransform struct {
 	Position glm.Vec3
-	Rotation float32
+	Rotation glm.Vec3
 }

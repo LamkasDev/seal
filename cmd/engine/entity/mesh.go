@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/EngoEngine/glm"
 	commonPipeline "github.com/LamkasDev/seal/cmd/common/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/time"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
@@ -85,7 +86,7 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 			PImageInfo: []vulkan.DescriptorImageInfo{
 				{
 					ImageLayout: vulkan.ImageLayoutShaderReadOnlyOptimal,
-					ImageView:   sealRenderer.RendererInstance.TextureContainer.Textures[data.Mesh.Texture].ImageView.Handle,
+					ImageView:   data.Mesh.Texture.ImageView.Handle,
 					Sampler:     sealRenderer.RendererInstance.Sampler.Handle,
 				},
 			},
@@ -99,12 +100,16 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 
 func RenderEntityComponentMesh(component *EntityComponent) error {
 	data := component.Data.(EntityComponentMeshData)
+	camera := sealRenderer.RendererInstance.Camera.Position
 	if data.Mesh.Id == sealMesh.MESH_BASIC {
-		component.Entity.Transform.Rotation += time.DeltaTime * 100
-		data.Buffer.Options.Uniforms[sealRenderer.RendererInstance.CurrentFrame] = sealUniform.NewVulkanUniform3D(sealRenderer.RendererInstance.Window.Data.Extent, sealRenderer.RendererInstance.Camera.Position, component.Entity.Transform.Position, component.Entity.Transform.Rotation)
-		if err := UpdateEntityComponentMesh(component, sealRenderer.RendererInstance.CurrentFrame, sealRenderer.RendererInstance.CurrentFrame); err != nil {
-			return err
-		}
+		component.Entity.Transform.Rotation[1] += time.DeltaTime * 100
+	}
+	if data.Mesh.Id == sealMesh.MESH_UI {
+		camera = glm.Vec3{0, 0, 2}
+	}
+	data.Buffer.Options.Uniforms[sealRenderer.RendererInstance.CurrentFrame] = sealUniform.NewVulkanUniform3D(sealRenderer.RendererInstance.Window.Data.Extent, camera, component.Entity.Transform.Position, component.Entity.Transform.Rotation)
+	if err := UpdateEntityComponentMesh(component, sealRenderer.RendererInstance.CurrentFrame, sealRenderer.RendererInstance.CurrentFrame); err != nil {
+		return err
 	}
 	component.Data = data
 

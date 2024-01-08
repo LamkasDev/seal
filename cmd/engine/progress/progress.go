@@ -14,6 +14,7 @@ const (
 	LOADING_STAGE_CREATING_TEXTURE_CONTAINER         = "renderer > creating texture container"
 	LOADING_STAGE_CREATING_SHADER_CONTAINER          = "renderer > creating shader container"
 	LOADING_STAGE_CREATING_MESH_CONTAINER            = "renderer > creating mesh container"
+	LOADING_STAGE_CREATING_FONT_CONTAINER            = "renderer > creating font container"
 	LOADING_STAGE_CREATING_DESCRIPTOR_POOL_CONTAINER = "renderer > creating descriptor pool container"
 	LOADING_STAGE_CREATING_BUFFER_CONTAINER          = "renderer > creating buffer container"
 	LOADING_STAGE_CREATING_SAMPLER                   = "renderer > creating sampler"
@@ -38,6 +39,7 @@ var LoadingStages = []string{
 	LOADING_STAGE_CREATING_TEXTURE_CONTAINER,
 	LOADING_STAGE_CREATING_SHADER_CONTAINER,
 	LOADING_STAGE_CREATING_MESH_CONTAINER,
+	LOADING_STAGE_CREATING_FONT_CONTAINER,
 	LOADING_STAGE_CREATING_DESCRIPTOR_POOL_CONTAINER,
 	LOADING_STAGE_CREATING_BUFFER_CONTAINER,
 	LOADING_STAGE_CREATING_SAMPLER,

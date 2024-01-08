@@ -18,13 +18,13 @@ var DefaultTextures = []string{
 
 type VulkanTextureContainer struct {
 	Device   *logical.VulkanLogicalDevice
-	Textures map[string]VulkanTexture
+	Textures map[string]*VulkanTexture
 }
 
 func NewVulkanTextureContainer(device *logical.VulkanLogicalDevice) (VulkanTextureContainer, error) {
 	container := VulkanTextureContainer{
 		Device:   device,
-		Textures: map[string]VulkanTexture{},
+		Textures: map[string]*VulkanTexture{},
 	}
 	for _, texture := range DefaultTextures {
 		if _, err := CreateVulkanTextureWithContainer(&container, texture); err != nil {
@@ -46,14 +46,14 @@ func CreateVulkanTextureWithContainer(container *VulkanTextureContainer, id stri
 	if err != nil {
 		return texture, err
 	}
-	container.Textures[id] = texture
+	container.Textures[id] = &texture
 
 	return texture, nil
 }
 
 func FreeVulkanTextureContainer(container *VulkanTextureContainer) error {
 	for _, texture := range container.Textures {
-		if err := FreeVulkanTexture(&texture); err != nil {
+		if err := FreeVulkanTexture(texture); err != nil {
 			return err
 		}
 	}

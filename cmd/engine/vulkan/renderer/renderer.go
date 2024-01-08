@@ -8,6 +8,7 @@ import (
 	sealBuffer "github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/descriptor"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/font"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	sealPipeline "github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
@@ -37,6 +38,7 @@ type VulkanRenderer struct {
 	ShaderContainer         shader.VulkanShaderContainer
 	TextureContainer        sealTexture.VulkanTextureContainer
 	MeshContainer           mesh.VulkanMeshContainer
+	FontContainer           font.VulkanFontContainer
 	DescriptorPoolContainer descriptor.VulkanDescriptorPoolContainer
 	BufferContainer         sealBuffer.VulkanBufferContainer
 
@@ -95,7 +97,11 @@ func NewRenderer() (VulkanRenderer, error) {
 		return renderer, err
 	}
 	progress.AdvanceLoading()
-	if renderer.MeshContainer, err = mesh.NewVulkanMeshContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
+	if renderer.MeshContainer, err = mesh.NewVulkanMeshContainer(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.TextureContainer); err != nil {
+		return renderer, err
+	}
+	progress.AdvanceLoading()
+	if renderer.FontContainer, err = font.NewVulkanFontContainer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
 		return renderer, err
 	}
 	progress.AdvanceLoading()
@@ -135,9 +141,6 @@ func NewRenderer() (VulkanRenderer, error) {
 		return renderer, err
 	}
 
-	if err := PushVulkanRendererBuffers(&renderer); err != nil {
-		return renderer, err
-	}
 	if err := AdvanceVulkanRendererFrame(&renderer); err != nil {
 		return renderer, err
 	}
@@ -256,22 +259,10 @@ func PushVulkanRendererBuffers(renderer *VulkanRenderer) error {
 	}
 
 	for _, texture := range renderer.TextureContainer.Textures {
-		ApplyVulkanTextureBarrier(renderer, &texture, vulkan.ImageLayoutUndefined, vulkan.ImageLayoutTransferDstOptimal)
-		imageCopy := vulkan.BufferImageCopy{
-			BufferOffset:      0,
-			BufferRowLength:   0,
-			BufferImageHeight: 0,
-			ImageSubresource: vulkan.ImageSubresourceLayers{
-				AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
-				MipLevel:       0,
-				BaseArrayLayer: 0,
-				LayerCount:     1,
-			},
-			ImageOffset: vulkan.Offset3D{X: 0, Y: 0, Z: 0},
-			ImageExtent: texture.Image.Options.CreateInfo.Extent,
-		}
-		vulkan.CmdCopyBufferToImage(renderer.RendererCommander.StagingBuffer.Handle, texture.Buffer.StagingBuffer.Handle, texture.Image.Handle, vulkan.ImageLayoutTransferDstOptimal, 1, []vulkan.BufferImageCopy{imageCopy})
-		ApplyVulkanTextureBarrier(renderer, &texture, vulkan.ImageLayoutTransferDstOptimal, vulkan.ImageLayoutShaderReadOnlyOptimal)
+		PrepareVulkanTexture(renderer, texture)
+	}
+	for _, font := range renderer.FontContainer.Fonts {
+		PrepareVulkanTexture(renderer, &font.Texture)
 	}
 
 	for _, mesh := range renderer.MeshContainer.Meshes {
@@ -300,6 +291,25 @@ func PushVulkanRendererBuffers(renderer *VulkanRenderer) error {
 	}
 
 	return nil
+}
+
+func PrepareVulkanTexture(renderer *VulkanRenderer, texture *sealTexture.VulkanTexture) {
+	ApplyVulkanTextureBarrier(renderer, texture, vulkan.ImageLayoutUndefined, vulkan.ImageLayoutTransferDstOptimal)
+	imageCopy := vulkan.BufferImageCopy{
+		BufferOffset:      0,
+		BufferRowLength:   0,
+		BufferImageHeight: 0,
+		ImageSubresource: vulkan.ImageSubresourceLayers{
+			AspectMask:     vulkan.ImageAspectFlags(vulkan.ImageAspectColorBit),
+			MipLevel:       0,
+			BaseArrayLayer: 0,
+			LayerCount:     1,
+		},
+		ImageOffset: vulkan.Offset3D{X: 0, Y: 0, Z: 0},
+		ImageExtent: texture.Image.Options.CreateInfo.Extent,
+	}
+	vulkan.CmdCopyBufferToImage(renderer.RendererCommander.StagingBuffer.Handle, texture.Buffer.StagingBuffer.Handle, texture.Image.Handle, vulkan.ImageLayoutTransferDstOptimal, 1, []vulkan.BufferImageCopy{imageCopy})
+	ApplyVulkanTextureBarrier(renderer, texture, vulkan.ImageLayoutTransferDstOptimal, vulkan.ImageLayoutShaderReadOnlyOptimal)
 }
 
 func ApplyVulkanTextureBarrier(renderer *VulkanRenderer, texture *sealTexture.VulkanTexture, oldLayout vulkan.ImageLayout, newLayout vulkan.ImageLayout) {
@@ -351,6 +361,9 @@ func FreeRenderer(renderer *VulkanRenderer) error {
 		return err
 	}
 	if err := sampler.FreeVulkanSampler(&renderer.Sampler); err != nil {
+		return err
+	}
+	if err := font.FreeVulkanFontContainer(&renderer.FontContainer); err != nil {
 		return err
 	}
 	if err := mesh.FreeVulkanMeshContainer(&renderer.MeshContainer); err != nil {

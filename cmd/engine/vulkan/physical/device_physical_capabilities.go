@@ -22,6 +22,7 @@ type VulkanPhysicalDeviceQueueCapabilities struct {
 	Families          []vulkan.QueueFamilyProperties
 	GraphicsIndex     int
 	PresentationIndex int
+	TransferIndex     int
 }
 
 type VulkanPhysicalDeviceSurfaceCapabilities struct {
@@ -78,6 +79,11 @@ func NewVulkanPhysicalDeviceCapabilities(handle vulkan.PhysicalDevice, cwindow *
 			}
 			if support == 1 {
 				capabilities.Queue.PresentationIndex = i
+			}
+		}
+		if capabilities.Queue.TransferIndex == -1 {
+			if vulkan.QueueFlagBits(capabilities.Queue.Families[i].QueueFlags)&vulkan.QueueTransferBit == vulkan.QueueTransferBit {
+				capabilities.Queue.TransferIndex = i
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	sealEngine "github.com/LamkasDev/seal/cmd/engine/engine"
 	"github.com/LamkasDev/seal/cmd/engine/progress"
 	"github.com/LamkasDev/seal/cmd/engine/scene"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/font"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/renderer"
 	sealTransform "github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
@@ -32,14 +33,18 @@ func main() {
 	defer sealEngine.FreeEngine(&engine)
 
 	// Do goofy stuff
-	if err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_BASIC], sealTransform.VulkanTransform{Position: glm.Vec3{0, 0, 0}}); err != nil {
+	if _, err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_BASIC], sealTransform.VulkanTransform{Position: glm.Vec3{0, 0, 0}}); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
-	if err = scene.SpawnSceneModel(&engine.Scene, engine.Renderer.MeshContainer.Meshes[mesh.MESH_UI], sealTransform.VulkanTransform{Position: glm.Vec3{0, 0, 0}}); err != nil {
+	uif, _ := font.CreateVulkanFontMesh(&engine.Renderer.MeshContainer, engine.Renderer.FontContainer.Fonts[font.FONT_DEFAULT])
+	if _, err := scene.SpawnSceneModel(&engine.Scene, &uif, sealTransform.VulkanTransform{Position: glm.Vec3{0.9, 1.5, 0.9}, Rotation: glm.Vec3{0, 0, 90}}); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}
 
 	// Run the main loop
+	if err := renderer.PushVulkanRendererBuffers(&engine.Renderer); err != nil {
+		return
+	}
 	if err := sealEngine.RunEngine(&engine); err != nil {
 		logger.DefaultLogger.Panic(err.Error())
 	}

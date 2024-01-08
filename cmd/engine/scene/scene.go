@@ -20,19 +20,19 @@ func NewScene() (Scene, error) {
 	return scene, nil
 }
 
-func SpawnSceneModel(scene *Scene, mesh *sealMesh.VulkanMesh, transform sealTransform.VulkanTransform) error {
+func SpawnSceneModel(scene *Scene, mesh *sealMesh.VulkanMesh, transform sealTransform.VulkanTransform) (entity.Entity, error) {
 	centity, err := entity.NewEntity(transform)
 	if err != nil {
-		return err
+		return centity, err
 	}
 	component, err := entity.NewEntityComponentMesh(&centity, mesh)
 	if err != nil {
-		return err
+		return centity, err
 	}
 	centity.Components = append(centity.Components, component)
 	scene.Entities = append(scene.Entities, centity)
 
-	return nil
+	return centity, nil
 }
 
 func UpdateScene(scene *Scene) error {
