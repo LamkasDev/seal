@@ -5,29 +5,32 @@ import (
 	sealBuffer "github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/command"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
+	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/shader"
+	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanRendererCommander struct {
-	Device          *logical.VulkanLogicalDevice
-	ShaderContainer *shader.VulkanShaderContainer
-	Pool            command.VulkanCommandPool
+	Device              *logical.VulkanLogicalDevice
+	ShaderContainer     *shader.VulkanShaderContainer
+	RenderPassContainer pass.VulkanRenderPassContainer
+	Pool                command.VulkanCommandPool
 
-	StagingBuffer          sealBuffer.VulkanCommandBuffer
-	CommandBuffers         []sealBuffer.VulkanCommandBuffer
-	CurrentCommandBuffer   *sealBuffer.VulkanCommandBuffer
-	AbstractCommandBuffers map[string]sealBuffer.VulkanAbstractBuffer
+	StagingBuffer        sealBuffer.VulkanCommandBuffer
+	CommandBuffers       []sealBuffer.VulkanCommandBuffer
+	CurrentCommandBuffer *sealBuffer.VulkanCommandBuffer
 }
 
-func NewVulkanRendererCommander(device *logical.VulkanLogicalDevice, shaderContainer *shader.VulkanShaderContainer) (VulkanRendererCommander, error) {
+func NewVulkanRendererCommander(device *logical.VulkanLogicalDevice, format vulkan.Format, shaders []string) (VulkanRendererCommander, error) {
 	var err error
 	commander := VulkanRendererCommander{
-		Device:                 device,
-		ShaderContainer:        shaderContainer,
-		CommandBuffers:         make([]sealBuffer.VulkanCommandBuffer, commonPipeline.MaxFramesInFlight),
-		AbstractCommandBuffers: map[string]sealBuffer.VulkanAbstractBuffer{},
+		Device:         device,
+		CommandBuffers: make([]sealBuffer.VulkanCommandBuffer, commonPipeline.MaxFramesInFlight),
 	}
 
+	if commander.RenderPassContainer, err = pass.NewVulkanRenderPassContainer(device, format, shaders); err != nil {
+		return commander, err
+	}
 	if commander.Pool, err = command.NewVulkanCommandPool(device, uint32(device.Physical.Capabilities.Queue.GraphicsIndex)); err != nil {
 		return commander, err
 	}
@@ -39,29 +42,26 @@ func NewVulkanRendererCommander(device *logical.VulkanLogicalDevice, shaderConta
 			return commander, err
 		}
 	}
-	for key := range shaderContainer.Shaders {
-		commander.AbstractCommandBuffers[key] = sealBuffer.NewVulkanAbstractBuffer()
-	}
 
 	return commander, nil
 }
 
-func RecordVulkanRendererCommanderCommands(commander *VulkanRendererCommander, shader string, action sealBuffer.VulkanAbstractBufferAction) {
-	buffer := commander.AbstractCommandBuffers[shader]
+func RecordVulkanRendererCommanderCommands(commander *VulkanRendererCommander, layer uint8, shader string, action sealBuffer.VulkanAbstractBufferAction) {
+	buffer := commander.RenderPassContainer.Passes[layer].AbstractCommandBuffers[shader]
 	buffer.Actions = append(buffer.Actions, action)
-	commander.AbstractCommandBuffers[shader] = buffer
+	commander.RenderPassContainer.Passes[layer].AbstractCommandBuffers[shader] = buffer
 }
 
-func RunVulkanRendererCommanderCommands(commander *VulkanRendererCommander, shader string) {
-	for _, action := range commander.AbstractCommandBuffers[shader].Actions {
+func RunVulkanRendererCommanderCommands(commander *VulkanRendererCommander, layer uint8, shader string) {
+	for _, action := range commander.RenderPassContainer.Passes[layer].AbstractCommandBuffers[shader].Actions {
 		action()
 	}
 }
 
-func ResetVulkanRendererCommanderCommands(commander *VulkanRendererCommander, shader string) {
-	buffer := commander.AbstractCommandBuffers[shader]
+func ResetVulkanRendererCommanderCommands(commander *VulkanRendererCommander, layer uint8, shader string) {
+	buffer := commander.RenderPassContainer.Passes[layer].AbstractCommandBuffers[shader]
 	buffer.Actions = []sealBuffer.VulkanAbstractBufferAction{}
-	commander.AbstractCommandBuffers[shader] = buffer
+	commander.RenderPassContainer.Passes[layer].AbstractCommandBuffers[shader] = buffer
 }
 
 func FreeVulkanRendererCommander(commander *VulkanRendererCommander) error {

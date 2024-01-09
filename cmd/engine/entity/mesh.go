@@ -101,10 +101,10 @@ func UpdateEntityComponentMesh(component *EntityComponent, startFrame uint32, en
 func RenderEntityComponentMesh(component *EntityComponent) error {
 	data := component.Data.(EntityComponentMeshData)
 	camera := sealRenderer.RendererInstance.Camera.Position
-	if data.Mesh.Id == sealMesh.MESH_BASIC {
+	if component.Entity.Layer == LAYER_DEFAULT {
 		component.Entity.Transform.Rotation[1] += time.DeltaTime * 100
 	}
-	if data.Mesh.Id == sealMesh.MESH_UI {
+	if component.Entity.Layer == LAYER_UI {
 		camera = glm.Vec3{0, 0, 2}
 	}
 	data.Buffer.Options.Uniforms[sealRenderer.RendererInstance.CurrentFrame] = sealUniform.NewVulkanUniform3D(sealRenderer.RendererInstance.Window.Data.Extent, camera, component.Entity.Transform.Position, component.Entity.Transform.Rotation)
@@ -113,7 +113,7 @@ func RenderEntityComponentMesh(component *EntityComponent) error {
 	}
 	component.Data = data
 
-	sealRenderer.RecordVulkanRendererCommanderCommands(&sealRenderer.RendererInstance.RendererCommander, data.Mesh.Shader, func() {
+	sealRenderer.RecordVulkanRendererCommanderCommands(&sealRenderer.RendererInstance.RendererCommander, uint8(component.Entity.Layer), data.Mesh.Shader, func() {
 		vulkan.CmdBindDescriptorSets(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, vulkan.PipelineBindPointGraphics, sealRenderer.RendererInstance.Layout.Handle, 0, 1, []vulkan.DescriptorSet{data.DescriptorSets[sealRenderer.RendererInstance.CurrentFrame].Handle}, 0, nil)
 		vulkan.CmdBindVertexBuffers(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, 0, 1, []vulkan.Buffer{data.Mesh.Buffer.DeviceBuffer.Handle}, []vulkan.DeviceSize{buffer.GetVulkanMeshBufferOptionsVerticesOffset(&data.Mesh.Buffer.Options)})
 		vulkan.CmdBindIndexBuffer(sealRenderer.RendererInstance.RendererCommander.CurrentCommandBuffer.Handle, data.Mesh.Buffer.DeviceBuffer.Handle, buffer.GetVulkanMeshBufferOptionsIndicesOffset(&data.Mesh.Buffer.Options), vulkan.IndexTypeUint16)

@@ -1,21 +1,24 @@
 package pass
 
 import (
+	sealBuffer "github.com/LamkasDev/seal/cmd/engine/vulkan/buffer"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/logical"
 	"github.com/LamkasDev/seal/cmd/logger"
 	"github.com/vulkan-go/vulkan"
 )
 
 type VulkanRenderPass struct {
-	Handle  vulkan.RenderPass
-	Device  *logical.VulkanLogicalDevice
-	Options VulkanRenderPassOptions
+	Handle                 vulkan.RenderPass
+	Device                 *logical.VulkanLogicalDevice
+	Options                VulkanRenderPassOptions
+	AbstractCommandBuffers map[string]sealBuffer.VulkanAbstractBuffer
 }
 
-func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, format vulkan.Format) (VulkanRenderPass, error) {
+func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, options VulkanRenderPassOptions) (VulkanRenderPass, error) {
 	pass := VulkanRenderPass{
-		Device:  device,
-		Options: NewVulkanRenderPassOptions(format),
+		Device:                 device,
+		Options:                options,
+		AbstractCommandBuffers: map[string]sealBuffer.VulkanAbstractBuffer{},
 	}
 
 	var vulkanRenderPass vulkan.RenderPass
@@ -24,6 +27,11 @@ func NewVulkanRenderPass(device *logical.VulkanLogicalDevice, format vulkan.Form
 		return pass, vulkan.Error(res)
 	}
 	pass.Handle = vulkanRenderPass
+
+	for _, shader := range options.Shaders {
+		pass.AbstractCommandBuffers[shader] = sealBuffer.NewVulkanAbstractBuffer()
+	}
+
 	logger.DefaultLogger.Debug("created new vulkan render pass")
 
 	return pass, nil

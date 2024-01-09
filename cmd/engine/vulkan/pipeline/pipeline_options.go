@@ -58,8 +58,14 @@ func NewVulkanPipelineOptions(layout *pipeline_layout.VulkanPipelineLayout, view
 			RasterizationSamples: vulkan.SampleCount1Bit,
 		},
 		ColorBlendAttachmentState: vulkan.PipelineColorBlendAttachmentState{
-			ColorWriteMask: vulkan.ColorComponentFlags(vulkan.ColorComponentRBit | vulkan.ColorComponentGBit | vulkan.ColorComponentBBit | vulkan.ColorComponentABit),
-			BlendEnable:    vulkan.Bool32(0),
+			ColorWriteMask:      vulkan.ColorComponentFlags(vulkan.ColorComponentRBit | vulkan.ColorComponentGBit | vulkan.ColorComponentBBit | vulkan.ColorComponentABit),
+			BlendEnable:         vulkan.True,
+			SrcColorBlendFactor: vulkan.BlendFactorSrcAlpha,
+			DstColorBlendFactor: vulkan.BlendFactorOneMinusSrcAlpha,
+			ColorBlendOp:        vulkan.BlendOpAdd,
+			SrcAlphaBlendFactor: vulkan.BlendFactorOne,
+			DstAlphaBlendFactor: vulkan.BlendFactorZero,
+			AlphaBlendOp:        vulkan.BlendOpAdd,
 		},
 		DepthStencilState: vulkan.PipelineDepthStencilStateCreateInfo{
 			SType:                 vulkan.StructureTypePipelineDepthStencilStateCreateInfo,

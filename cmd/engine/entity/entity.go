@@ -3,12 +3,14 @@ package entity
 import sealTransform "github.com/LamkasDev/seal/cmd/engine/vulkan/transform"
 
 type Entity struct {
+	Layer      EntityLayer
 	Transform  sealTransform.VulkanTransform
 	Components []EntityComponent
 }
 
 func NewEntity(transform sealTransform.VulkanTransform) (Entity, error) {
 	entity := Entity{
+		Layer:      LAYER_DEFAULT,
 		Transform:  transform,
 		Components: []EntityComponent{},
 	}

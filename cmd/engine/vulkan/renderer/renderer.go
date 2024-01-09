@@ -10,7 +10,6 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/device"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/font"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/mesh"
-	"github.com/LamkasDev/seal/cmd/engine/vulkan/pass"
 	sealPipeline "github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/pipeline_layout"
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/sampler"
@@ -21,6 +20,7 @@ import (
 	"github.com/LamkasDev/seal/cmd/engine/vulkan/viewport"
 	"github.com/LamkasDev/seal/cmd/engine/window"
 	"github.com/LamkasDev/seal/cmd/logger"
+	"github.com/samber/lo"
 	"github.com/vulkan-go/vulkan"
 )
 
@@ -43,22 +43,21 @@ type VulkanRenderer struct {
 	BufferContainer         sealBuffer.VulkanBufferContainer
 
 	Sampler           sampler.VulkanSampler
-	RenderPass        pass.VulkanRenderPass
 	RendererSyncer    VulkanRendererSyncer
 	RendererCommander VulkanRendererCommander
+	ShaderPipelines   []map[string]sealPipeline.VulkanPipeline
 
 	CurrentImageIndex uint32
 	CurrentFrame      uint32
 
-	ShaderPipelines map[string]sealPipeline.VulkanPipeline
-	Swapchain       swapchain.VulkanSwapchain
+	Swapchain swapchain.VulkanSwapchain
 }
 
 func NewRenderer() (VulkanRenderer, error) {
 	var err error
 	renderer := VulkanRenderer{
 		Camera:          transform.VulkanTransform{Position: glm.Vec3{0, 0, 2}},
-		ShaderPipelines: map[string]sealPipeline.VulkanPipeline{},
+		ShaderPipelines: []map[string]sealPipeline.VulkanPipeline{},
 	}
 
 	progress.AdvanceLoading()
@@ -118,26 +117,28 @@ func NewRenderer() (VulkanRenderer, error) {
 		return renderer, err
 	}
 	progress.AdvanceLoading()
-	if renderer.RenderPass, err = pass.NewVulkanRenderPass(&renderer.VulkanInstance.Devices.LogicalDevice, renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormats[renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormatIndex].Format); err != nil {
-		return renderer, err
-	}
 	progress.AdvanceLoading()
 	if renderer.RendererSyncer, err = NewVulkanRendererSyncer(&renderer.VulkanInstance.Devices.LogicalDevice); err != nil {
 		return renderer, err
 	}
 	progress.AdvanceLoading()
-	if renderer.RendererCommander, err = NewVulkanRendererCommander(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.ShaderContainer); err != nil {
+	a := renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormats[renderer.VulkanInstance.Devices.LogicalDevice.Physical.Capabilities.Surface.ImageFormatIndex].Format
+	if renderer.RendererCommander, err = NewVulkanRendererCommander(&renderer.VulkanInstance.Devices.LogicalDevice, a, lo.Keys(renderer.ShaderContainer.Shaders)); err != nil {
 		return renderer, err
 	}
 
 	progress.AdvanceLoading()
-	for key, shader := range renderer.ShaderContainer.Shaders {
-		if renderer.ShaderPipelines[key], err = sealPipeline.NewVulkanPipeline(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Window, &renderer.Layout, &renderer.Viewport, &renderer.RenderPass, &shader); err != nil {
-			return renderer, err
+	renderer.ShaderPipelines = make([]map[string]sealPipeline.VulkanPipeline, len(renderer.RendererCommander.RenderPassContainer.Passes))
+	for layer, pass := range renderer.RendererCommander.RenderPassContainer.Passes {
+		renderer.ShaderPipelines[layer] = map[string]sealPipeline.VulkanPipeline{}
+		for key, shader := range renderer.ShaderContainer.Shaders {
+			if renderer.ShaderPipelines[layer][key], err = sealPipeline.NewVulkanPipeline(&renderer.VulkanInstance.Devices.LogicalDevice, &renderer.Window, &renderer.Layout, &renderer.Viewport, pass, &shader); err != nil {
+				return renderer, err
+			}
 		}
 	}
 	progress.AdvanceLoading()
-	if renderer.Swapchain, err = swapchain.NewVulkanSwapchain(renderer.Layout.Device, &renderer.Window, &renderer.RenderPass, &renderer.Surface, nil); err != nil {
+	if renderer.Swapchain, err = swapchain.NewVulkanSwapchain(renderer.Layout.Device, &renderer.Window, renderer.RendererCommander.RenderPassContainer.Passes[0], &renderer.Surface, nil); err != nil {
 		return renderer, err
 	}
 
@@ -157,7 +158,7 @@ func ResizeVulkanRenderer(renderer *VulkanRenderer) error {
 		return err
 	}
 	renderer.Viewport = viewport.NewVulkanViewport(renderer.Window.Data.Extent)
-	renderer.Swapchain, err = swapchain.NewVulkanSwapchain(renderer.Layout.Device, &renderer.Window, &renderer.RenderPass, &renderer.Surface, nil)
+	renderer.Swapchain, err = swapchain.NewVulkanSwapchain(renderer.Layout.Device, &renderer.Window, renderer.RendererCommander.RenderPassContainer.Passes[0], &renderer.Surface, nil)
 	if err != nil {
 		return err
 	}
@@ -204,9 +205,6 @@ func BeginRendererFrame(renderer *VulkanRenderer) error {
 	if err := sealBuffer.BeginVulkanCommandBuffer(renderer.RendererCommander.CurrentCommandBuffer); err != nil {
 		return err
 	}
-	if err := BeginVulkanRenderPass(renderer, renderer.RendererCommander.CurrentCommandBuffer, renderer.CurrentImageIndex); err != nil {
-		return err
-	}
 	vulkan.CmdSetViewport(renderer.RendererCommander.CurrentCommandBuffer.Handle, 0, 1, []vulkan.Viewport{
 		{
 			X:        0,
@@ -223,15 +221,20 @@ func BeginRendererFrame(renderer *VulkanRenderer) error {
 }
 
 func EndRendererFrame(renderer *VulkanRenderer) error {
-	for key := range renderer.RendererCommander.AbstractCommandBuffers {
-		if len(renderer.RendererCommander.AbstractCommandBuffers[key].Actions) < 1 {
-			continue
+	for layer, pass := range renderer.RendererCommander.RenderPassContainer.Passes {
+		if err := BeginVulkanRenderPass(renderer, pass, renderer.RendererCommander.CurrentCommandBuffer, renderer.CurrentImageIndex); err != nil {
+			return err
 		}
-		vulkan.CmdBindPipeline(renderer.RendererCommander.CurrentCommandBuffer.Handle, vulkan.PipelineBindPointGraphics, renderer.ShaderPipelines[key].Handle)
-		RunVulkanRendererCommanderCommands(&renderer.RendererCommander, key)
-		ResetVulkanRendererCommanderCommands(&renderer.RendererCommander, key)
+		for shader, buffer := range pass.AbstractCommandBuffers {
+			if len(buffer.Actions) < 1 {
+				continue
+			}
+			vulkan.CmdBindPipeline(renderer.RendererCommander.CurrentCommandBuffer.Handle, vulkan.PipelineBindPointGraphics, renderer.ShaderPipelines[layer][shader].Handle)
+			RunVulkanRendererCommanderCommands(&renderer.RendererCommander, uint8(layer), shader)
+			ResetVulkanRendererCommanderCommands(&renderer.RendererCommander, uint8(layer), shader)
+		}
+		vulkan.CmdEndRenderPass(renderer.RendererCommander.CurrentCommandBuffer.Handle)
 	}
-	vulkan.CmdEndRenderPass(renderer.RendererCommander.CurrentCommandBuffer.Handle)
 	if err := sealBuffer.EndVulkanCommandBuffer(renderer.RendererCommander.CurrentCommandBuffer); err != nil {
 		return err
 	}
@@ -357,9 +360,6 @@ func FreeRenderer(renderer *VulkanRenderer) error {
 	if err := FreeVulkanRendererSyncer(&renderer.RendererSyncer); err != nil {
 		return err
 	}
-	if err := pass.FreeVulkanRenderPass(&renderer.RenderPass); err != nil {
-		return err
-	}
 	if err := sampler.FreeVulkanSampler(&renderer.Sampler); err != nil {
 		return err
 	}
@@ -381,9 +381,11 @@ func FreeRenderer(renderer *VulkanRenderer) error {
 	if err := pipeline_layout.FreeVulkanPipelineLayout(&renderer.Layout); err != nil {
 		return err
 	}
-	for _, pipeline := range renderer.ShaderPipelines {
-		if err := sealPipeline.FreeVulkanPipeline(&pipeline); err != nil {
-			return err
+	for _, pipelines := range renderer.ShaderPipelines {
+		for _, pipeline := range pipelines {
+			if err := sealPipeline.FreeVulkanPipeline(&pipeline); err != nil {
+				return err
+			}
 		}
 	}
 	if err := sealTexture.FreeVulkanTextureContainer(&renderer.TextureContainer); err != nil {

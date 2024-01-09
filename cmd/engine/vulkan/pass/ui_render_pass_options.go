@@ -2,26 +2,18 @@ package pass
 
 import "github.com/vulkan-go/vulkan"
 
-type VulkanRenderPassOptions struct {
-	ColorAttachmentDescription vulkan.AttachmentDescription
-	ColorAttachmentReference   vulkan.AttachmentReference
-	DepthAttachmentDescription vulkan.AttachmentDescription
-	DepthAttachmentReference   vulkan.AttachmentReference
-	SubpassDescription         vulkan.SubpassDescription
-	SubpassDependency          vulkan.SubpassDependency
-	CreateInfo                 vulkan.RenderPassCreateInfo
-}
-
-func NewVulkanRenderPassOptions(format vulkan.Format) VulkanRenderPassOptions {
+func NewVulkanUIRenderPassOptions(format vulkan.Format, shaders []string) VulkanRenderPassOptions {
+	colors := []vulkan.ClearValue{{}, {}}
+	colors[1].SetDepthStencil(1, 0)
 	options := VulkanRenderPassOptions{
 		ColorAttachmentDescription: vulkan.AttachmentDescription{
 			Format:         format,
 			Samples:        vulkan.SampleCount1Bit,
-			LoadOp:         vulkan.AttachmentLoadOpClear,
+			LoadOp:         vulkan.AttachmentLoadOpLoad,
 			StoreOp:        vulkan.AttachmentStoreOpStore,
 			StencilLoadOp:  vulkan.AttachmentLoadOpDontCare,
 			StencilStoreOp: vulkan.AttachmentStoreOpDontCare,
-			InitialLayout:  vulkan.ImageLayoutUndefined,
+			InitialLayout:  vulkan.ImageLayoutPresentSrc,
 			FinalLayout:    vulkan.ImageLayoutPresentSrc,
 		},
 		ColorAttachmentReference: vulkan.AttachmentReference{
@@ -50,6 +42,8 @@ func NewVulkanRenderPassOptions(format vulkan.Format) VulkanRenderPassOptions {
 			SrcAccessMask: 0,
 			DstAccessMask: vulkan.AccessFlags(vulkan.AccessColorAttachmentWriteBit | vulkan.AccessDepthStencilAttachmentWriteBit),
 		},
+		Shaders:     shaders,
+		ClearValues: colors,
 	}
 	options.SubpassDescription = vulkan.SubpassDescription{
 		PipelineBindPoint:       vulkan.PipelineBindPointGraphics,

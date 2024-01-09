@@ -9,35 +9,35 @@ import (
 )
 
 type Scene struct {
-	Entities []sealEntity.Entity
+	Entities []*sealEntity.Entity
 }
 
 func NewScene() (Scene, error) {
 	scene := Scene{
-		Entities: []sealEntity.Entity{},
+		Entities: []*sealEntity.Entity{},
 	}
 
 	return scene, nil
 }
 
-func SpawnSceneModel(scene *Scene, mesh *sealMesh.VulkanMesh, transform sealTransform.VulkanTransform) (entity.Entity, error) {
+func SpawnSceneModel(scene *Scene, mesh *sealMesh.VulkanMesh, transform sealTransform.VulkanTransform) (*entity.Entity, error) {
 	centity, err := entity.NewEntity(transform)
 	if err != nil {
-		return centity, err
+		return &centity, err
 	}
 	component, err := entity.NewEntityComponentMesh(&centity, mesh)
 	if err != nil {
-		return centity, err
+		return &centity, err
 	}
 	centity.Components = append(centity.Components, component)
-	scene.Entities = append(scene.Entities, centity)
+	scene.Entities = append(scene.Entities, &centity)
 
-	return centity, nil
+	return &centity, nil
 }
 
 func UpdateScene(scene *Scene) error {
 	for _, entity := range scene.Entities {
-		if err := sealEntity.UpdateEntity(&entity); err != nil {
+		if err := sealEntity.UpdateEntity(entity); err != nil {
 			return err
 		}
 	}
@@ -50,7 +50,7 @@ func RenderScene(scene *Scene) error {
 		return err
 	}
 	for _, entity := range scene.Entities {
-		if err := sealEntity.RenderEntity(&entity); err != nil {
+		if err := sealEntity.RenderEntity(entity); err != nil {
 			return err
 		}
 	}
@@ -63,7 +63,7 @@ func RenderScene(scene *Scene) error {
 
 func FreeScene(scene *Scene) error {
 	for _, entity := range scene.Entities {
-		if err := sealEntity.FreeEntity(&entity); err != nil {
+		if err := sealEntity.FreeEntity(entity); err != nil {
 			return err
 		}
 	}
